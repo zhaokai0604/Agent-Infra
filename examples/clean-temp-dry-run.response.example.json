@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "toolName": "CleanTempTool",
+  "traceId": "demo-trace-id-redacted",
+  "statusCode": 200,
+  "needConfirm": false,
+  "confirmationId": "",
+  "toolEffect": {
+    "action": "CLEAN",
+    "writeEffect": false,
+    "mode": "DRY_RUN"
+  },
+  "data": {
+    "mode": "DRY_RUN",
+    "path": "C:/agent-infra-demo/tmp",
+    "candidateCount": 3,
+    "deletedCount": 0,
+    "message": "Preview only. No real deletion was performed."
+  }
+}

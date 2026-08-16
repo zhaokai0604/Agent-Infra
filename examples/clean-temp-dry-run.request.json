@@ -1,0 +1,9 @@
+{
+  "toolName": "CleanTempTool",
+  "userMessage": "Preview temporary-file cleanup in the demo directory; do not perform a real deletion.",
+  "parameters": {
+    "path": "C:/agent-infra-demo/tmp",
+    "days": 7,
+    "dryRun": true
+  }
+}

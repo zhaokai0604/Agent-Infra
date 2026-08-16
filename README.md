@@ -117,13 +117,16 @@ Invoke-RestMethod http://localhost:8088/award-log/api/mcp/execute -Method Post -
 ### 验证命令
 
 ```powershell
-mvn verify
+# Windows 中文路径下建议避免 Surefire 分叉类路径兼容问题
+mvn verify -DforkCount=0
 cd frontend
 npm ci
 npm run build
 ```
 
 测试使用 H2 与测试配置，不要求本机启动完整中间件。构建产物、日志、本地数据和真实配置均由 `.gitignore` 排除。
+
+可提交的样例输入/输出见 [examples/](examples/)，本仓库实际构建与测试结果见 [运行验证记录](docs/competition/运行验证记录.md)。
 
 ## 交付与开放计划
 
@@ -132,6 +135,8 @@ npm run build
 ## 文档索引
 
 - [Agent Infra 参赛方案](docs/competition/agent-infra-参赛方案.md)
+- [运行验证记录](docs/competition/运行验证记录.md)
+- [安全样例输入/输出](examples/)
 - [功能说明与代码入口](docs/功能说明.md)
 - [部署文档](docs/deployment/部署文档.md)
 - [架构图](docs/architecture/)
