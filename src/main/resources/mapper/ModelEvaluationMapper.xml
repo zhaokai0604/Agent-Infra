@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.ModelEvaluationMapper">
+
+    <resultMap id="ModelEvaluationMap" type="com.award.log.model.ModelEvaluation">
+        <id column="id" property="id"/>
+        <result column="model_version" property="modelVersion"/>
+        <result column="sample_size" property="sampleSize"/>
+        <result column="accuracy" property="accuracy"/>
+        <result column="precision_score" property="precisionScore"/>
+        <result column="recall_score" property="recallScore"/>
+        <result column="f1_score" property="f1Score"/>
+        <result column="roc_auc" property="rocAuc"/>
+        <result column="pr_auc" property="prAuc"/>
+        <result column="confusion_matrix" property="confusionMatrix"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.award.log.model.ModelEvaluation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO model_evaluation(
+            model_version, sample_size, accuracy, precision_score, recall_score,
+            f1_score, roc_auc, pr_auc, confusion_matrix, create_time
+        ) VALUES (
+            #{modelVersion}, #{sampleSize}, #{accuracy}, #{precisionScore}, #{recallScore},
+            #{f1Score}, #{rocAuc}, #{prAuc}, #{confusionMatrix}, NOW()
+        )
+    </insert>
+
+    <select id="selectLatest" resultMap="ModelEvaluationMap">
+        SELECT * FROM model_evaluation
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

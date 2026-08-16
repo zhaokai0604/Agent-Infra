@@ -1,0 +1,30 @@
+# 本机覆盖配置（推荐复制到项目根目录 config/application-local.yml，已在 .gitignore）
+#
+# Windows: mkdir config; copy src\main\resources\application-local.example.yml config\application-local.yml
+# Linux/macOS: mkdir -p config && cp src/main/resources/application-local.example.yml config/application-local.yml
+#
+# 与主配置合并后，可覆盖数据库密码、大模型 Key、SSH 凭证加密密钥等。不要放进 src/main/resources，避免打包进 jar。
+
+spring:
+  profiles:
+    active: dev
+  datasource:
+    # 默认 MySQL 8；若用 MariaDB：org.mariadb.jdbc.Driver + jdbc:mariadb://...
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/log_analysis?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: "请填写本地 MySQL 密码"
+
+  ai:
+    openai:
+      api-key: "请填写 API Key"
+      # base-url: https://api.deepseek.com
+      # chat.options.model: deepseek-chat
+
+  mail:
+    username: "请填写发件邮箱"
+    password: "请填写邮箱授权码"
+
+# SSH 主机凭证 AES 加密（远程运维必需，勿提交真实值到 Git）
+# 也可在系统环境变量中设置：APP_CONFIG_SECRET=your-long-random-secret
+APP_CONFIG_SECRET: "请填写至少16字符的随机密钥"

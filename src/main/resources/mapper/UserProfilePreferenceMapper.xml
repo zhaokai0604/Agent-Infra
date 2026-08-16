@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.UserProfilePreferenceMapper">
+
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultType="com.award.log.model.UserProfilePreference">
+        SELECT user_id, email_enabled, sms_enabled, task_alerts, update_time
+        FROM user_profile_preference
+        WHERE user_id = #{userId}
+    </select>
+
+    <insert id="upsert" parameterType="com.award.log.model.UserProfilePreference">
+        INSERT INTO user_profile_preference (user_id, email_enabled, sms_enabled, task_alerts, update_time)
+        VALUES (#{userId}, #{emailEnabled}, #{smsEnabled}, #{taskAlerts}, NOW())
+        ON DUPLICATE KEY UPDATE
+            email_enabled = VALUES(email_enabled),
+            sms_enabled = VALUES(sms_enabled),
+            task_alerts = VALUES(task_alerts),
+            update_time = NOW()
+    </insert>
+</mapper>

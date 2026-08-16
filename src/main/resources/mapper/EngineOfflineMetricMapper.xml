@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.EngineOfflineMetricMapper">
+    <resultMap id="EngineOfflineMetricMap" type="com.award.log.model.EngineOfflineMetric">
+        <id column="id" property="id"/>
+        <result column="engine_type" property="engineType"/>
+        <result column="sample_size" property="sampleSize"/>
+        <result column="false_positive" property="falsePositive"/>
+        <result column="false_negative" property="falseNegative"/>
+        <result column="precision_score" property="precisionScore"/>
+        <result column="recall_score" property="recallScore"/>
+        <result column="f1_score" property="f1Score"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.award.log.model.EngineOfflineMetric">
+        INSERT INTO engine_offline_metric(engine_type, sample_size, false_positive, false_negative, precision_score, recall_score, f1_score, create_time)
+        VALUES(#{engineType}, #{sampleSize}, #{falsePositive}, #{falseNegative}, #{precisionScore}, #{recallScore}, #{f1Score}, NOW())
+    </insert>
+
+    <select id="selectLatest" resultMap="EngineOfflineMetricMap">
+        SELECT * FROM engine_offline_metric ORDER BY id DESC LIMIT #{limit}
+    </select>
+</mapper>

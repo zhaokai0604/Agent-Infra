@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.LogTemplateMapper">
+    <resultMap id="TemplateMap" type="com.award.log.model.LogTemplateRecord">
+        <id column="id" property="id"/>
+        <result column="template_id" property="templateId"/>
+        <result column="template_name" property="templateName"/>
+        <result column="template_content" property="templateContent"/>
+        <result column="severity" property="severity"/>
+        <result column="use_count" property="useCount"/>
+        <result column="last_seen_time" property="lastSeenTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.award.log.model.LogTemplateRecord">
+        INSERT INTO log_template(template_id, template_name, template_content, severity, use_count, last_seen_time, create_time, update_time)
+        VALUES(#{templateId}, #{templateName}, #{templateContent}, #{severity}, #{useCount}, NOW(), NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.award.log.model.LogTemplateRecord">
+        UPDATE log_template
+        SET template_name = #{templateName},
+            template_content = #{templateContent},
+            severity = #{severity},
+            use_count = #{useCount},
+            last_seen_time = NOW(),
+            update_time = NOW()
+        WHERE template_id = #{templateId}
+    </update>
+
+    <delete id="deleteByTemplateId">
+        DELETE FROM log_template WHERE template_id = #{templateId}
+    </delete>
+
+    <select id="selectByTemplateId" resultMap="TemplateMap">
+        SELECT * FROM log_template WHERE template_id = #{templateId}
+    </select>
+
+    <select id="selectPage" resultMap="TemplateMap">
+        SELECT * FROM log_template ORDER BY use_count DESC LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+</mapper>

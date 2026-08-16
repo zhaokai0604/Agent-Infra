@@ -1,0 +1,77 @@
+spring:
+  config:
+    # 测试禁止吸入本机密钥/MySQL；与 IntegrationTestBase 强制 H2 属性配合
+    import: "optional:classpath:application-local.yml"
+  main:
+    allow-circular-references: true
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:log_analysis;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
+    username: sa
+    password: test
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+  ai:
+    openai:
+      api-key: test-integration-key
+      base-url: http://127.0.0.1:9
+      chat:
+        options:
+          model: deepseek-chat
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: never
+  elasticsearch:
+    enabled: false
+  kafka:
+    enabled: false
+
+award:
+  middleware:
+    kafka: false
+    redis: false
+
+app:
+  management:
+    enabled: false
+  security:
+    ai-audit-relaxed-read: true
+
+knowledge:
+  enabled: false
+  seed-on-startup: false
+
+agent:
+  min-privilege:
+    enabled: false
+  awm:
+    seed-on-startup: true
+    llm-induction-enabled: false
+
+ops:
+  dry-run:
+    global: true
+  auto-remediation:
+    enabled: false
+  patrol:
+    enabled: false
+    warm-on-startup: false
+    inspect-roots: logs
+
+spring.task.scheduling.enabled: false
+
+server:
+  servlet:
+    context-path: /
+
+logging:
+  level:
+    root: WARN
+    com.award.log: INFO
+
+mybatis:
+  mapper-locations: classpath:mapper-h2/*.xml

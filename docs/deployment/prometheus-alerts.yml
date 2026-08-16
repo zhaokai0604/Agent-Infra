@@ -1,0 +1,43 @@
+# ThreshCore / award-log Prometheus 告警规则示例
+# 挂载到 Prometheus: rule_files: ["prometheus-alerts.yml"]
+groups:
+  - name: threshcore_ops
+    rules:
+      - alert: PatrolZombieProcesses
+        expr: threshcore_patrol_zombie_processes > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "巡检发现僵尸进程"
+          description: "僵尸进程数 {{ $value }} 持续 5 分钟以上，建议结合 ps 与父进程排查。"
+
+      - alert: HighDiskUsage
+        expr: threshcore_disk_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "磁盘使用率过高"
+          description: "磁盘使用率 {{ $value }}% 超过 85% 持续 10 分钟。"
+
+      - alert: HighCpuUsage
+        expr: threshcore_cpu_usage_percent > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU 使用率过高"
+          description: "CPU 使用率 {{ $value }}% 持续 5 分钟。"
+
+      - alert: LogAnalysisErrorRate
+        expr: rate(log_analysis_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "日志分析错误率升高"
+          description: "近 5 分钟日志分析错误速率异常。"
+
+# 说明：需在应用中暴露对应自定义指标（Micrometer），或将 expr 替换为
+# 现有 spring_boot_* / jvm_* 指标。Actuator 端点：/award-log/actuator/prometheus

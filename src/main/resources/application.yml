@@ -1,0 +1,481 @@
+server:
+  port: 8088
+  servlet:
+    context-path: /award-log
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+  tomcat:
+    # 生产建议 120000–600000（ms）；超长仅保留给特殊导出接口时再通过反向代理单独放宽
+    connection-timeout: ${SERVER_TOMCAT_CONNECTION_TIMEOUT_MS:600000}
+
+# 中间件开关：false 时不加载 Kafka/Redis 自动配置、不尝试连接（无相关报错日志）。需要时再改为 true 或设环境变量。
+award:
+  middleware:
+    kafka: ${AWARD_MIDDLEWARE_KAFKA:false}
+    redis: ${AWARD_MIDDLEWARE_REDIS:false}
+
+app:
+  cors:
+    # 生产经 Nginx 使用正式域名时必须显式加入；多个来源用英文逗号分隔。
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+    allow-credentials: true
+  management:
+    # 单端口 8088：管理/业务接口同口
+    enabled: ${APP_MANAGEMENT_ENABLED:false}
+    port: ${APP_MANAGEMENT_PORT:8088}
+  # 执行审计（/admin/audit/ai/recent）：true 时任意已登录用户可读；生产务必 false（仅管理员）
+  security:
+    ai-audit-relaxed-read: ${APP_AI_AUDIT_RELAXED_READ:false}
+
+spring:
+  application:
+    name: award-log
+  # 任意 active profile 都会合并本机 application-local.yml（DB/AI 密钥等，文件已在 .gitignore）
+  config:
+    import: optional:classpath:application-local.yml,optional:file:./application-local.yml,optional:file:./config/application-local.yml
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+    # 麒麟 V11 + LoongArch 生产：prod-kylin = prod + kylin（安全校验 + 路径/命令探测）
+    # 联调测试：test-kylin（= prod + kylin + application-test-kylin.yml）
+    group:
+      prod-kylin: prod,kylin
+      test-kylin: prod,kylin,test-kylin
+  main:
+    allow-circular-references: false
+  autoconfigure:
+    exclude:
+  sql:
+    init:
+      mode: never
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  servlet:
+    multipart:
+      # 过大文件会在分析链路全量进堆；交付默认收紧，麒麟可用 env 再放宽
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:50MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:50MB}
+
+  # 避免默认单线程调度池被巡检/训练堵住采集排水
+  task:
+    scheduling:
+      pool:
+        size: ${SPRING_TASK_SCHEDULING_POOL_SIZE:4}
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
+  
+  # Database：默认 MySQL 8；MariaDB 可通过 DB_DRIVER/DB_URL 覆盖
+  datasource:
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/log_analysis?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+  
+  # Redis Configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+      timeout: 10000
+      jedis:
+        pool:
+          max-active: 8
+          max-wait: 3000
+          max-idle: 8
+          min-idle: 0
+
+   # Spring AI Configuration (DeepSeek via OpenAI Compatible Interface)
+  ai:
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: never
+    openai:
+      base-url: ${AI_BASE_URL:https://api.deepseek.com}
+      # 须通过环境变量 AI_API_KEY 或 application-local.yml 配置，勿在仓库内写默认值
+      api-key: ${AI_API_KEY:}
+      chat:
+        options:
+          model: ${AI_CHAT_MODEL:deepseek-chat}
+          temperature: ${AI_CHAT_TEMPERATURE:0.1}
+          top-p: ${AI_CHAT_TOP_P:0.85}
+          stream-usage: ${AI_STREAM_USAGE:true}
+      embedding:
+        options:
+          # DeepSeek 无独立 embedding 接口；当前项目主链路不依赖，保留占位避免 Spring AI 装配异常
+          model: ${AI_EMBEDDING_MODEL:deepseek-chat}
+          dimensions: 1024
+  
+  # Prometheus Configuration
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  
+  # Elasticsearch Configuration
+  elasticsearch:
+    enabled: ${ELASTIC_ENABLED:false}
+    uris: ${ELASTIC_URIS:http://localhost:9200}
+    username: ${ELASTIC_USERNAME:}
+    password: ${ELASTIC_PASSWORD:}
+
+  # Kafka（仅当 award.middleware.kafka=true 时生效；否则不装配客户端与监听器）
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: award-log-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: true
+      auto-commit-interval: 3000
+      max-poll-records: 500
+      fetch-max-wait: 500
+      fetch-min-size: 1
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      buffer-memory: 33554432
+      linger: 1
+    listener:
+      type: single
+      concurrency: 3
+    template:
+      default-topic: raw-logs
+
+# Log Collector Configuration
+log:
+  analysis:
+    max-concurrent-tasks: ${LOG_ANALYSIS_MAX_CONCURRENT:4}
+    detail-batch-size: ${LOG_ANALYSIS_DETAIL_BATCH:1000}
+    # 单次分析最大读取行数，超出截断并在报告中标注（大数据防 OOM）
+    max-lines: ${LOG_ANALYSIS_MAX_LINES:300000}
+    # 报告默认只返回异常抽样，全量走 /details 分页
+    report-anomaly-limit: ${LOG_ANALYSIS_REPORT_ANOMALY_LIMIT:200}
+    # 重新生成 CSV/HTML 时从 DB 拉取的上限
+    export-reload-limit: ${LOG_ANALYSIS_EXPORT_RELOAD_LIMIT:100000}
+  elasticsearch:
+    async:
+      enabled: ${LOG_ES_ASYNC_ENABLED:true}
+      batch-size: 100
+      flush-interval-ms: 5000
+      queue-capacity: 10000
+  collector:
+    enabled: true
+    file:
+      path: ${LOG_COLLECTOR_ROOT:auto}
+      max-depth: ${LOG_COLLECTOR_MAX_DEPTH:4}
+      poll-interval-ms: ${LOG_COLLECTOR_POLL_MS:5000}
+      include-extensions: .log,.txt,.out,.err,.debug,.info,.warn,.error,.fatal,.access,.audit,.trace
+      exclude-directories: node_modules,target,.git,.idea,.vscode,.cursor,$recycle.bin,system volume information,winsxs,windows,program files,program files (x86),appdata
+    db:
+      enabled: false
+      query: SELECT id, level, message, created_at FROM system_log WHERE id > {lastId} ORDER BY id ASC LIMIT 500
+      checkpoint-file: ""
+    network:
+      enabled: false
+      port: 514
+      protocol: UDP
+  pipeline:
+    kafka:
+      raw-topic: raw-logs
+      dlq-topic: raw-logs-dlq
+      retry-interval-ms: 1000
+      retry-max-attempts: 3
+    analyzer:
+      drain:
+        engine: plus
+        max-depth: 8
+        # 模板合并最小相似度（百分比 1–100），与 Drain 论文中 st 对应；过低易误合并
+        sim-threshold: 50
+      linux-enhanced: true
+    collector:
+      source-id: file-watcher
+      dispatch-enabled: true
+      dispatch-interval-ms: 5000
+      # 单采集器内存缓冲硬上限（行），超额丢弃防止调度卡住时 OOM
+      buffer-max-lines: ${LOG_COLLECTOR_BUFFER_MAX_LINES:8000}
+      # 启动时从文件末尾跟读，不回放历史全文
+      start-at-eof: ${LOG_COLLECTOR_START_AT_EOF:true}
+    stream:
+      error-rate-threshold: 0.30
+      min-sample-size: 20
+      cooldown-ms: 300000
+    decision:
+      feature-version: rf-v2
+      rule:
+        high-confidence: 0.90
+      rf:
+        high-confidence: 0.80
+        model-path: src/main/resources/models/random-forest-v2.onnx
+        model-version: rf-onnx-v2
+        alert-threshold: 0.75
+        # LoongArch64 上 ONNX 本地库常不可用，true 时跳过加载、全程启发式（赛题交付推荐）
+        force-heuristic-on-loongarch: ${RF_FORCE_HEURISTIC_LOONGARCH:false}
+
+# Alarm Configuration（日志分析平台内告警）
+# 注意：启用开关、最低级别、错误阈值、冷却等以控制台「告警配置」为准，持久化在运行目录 alarm-config.json；
+# 本段仅 alarm.aggregation.* 被 AiLogAlarmServiceImpl 读取（5 分钟同类告警聚合）。
+alarm:
+  aggregation:
+    enabled: true
+    window-minutes: 5
+    dimension: task_level_rootCause
+  error:
+    threshold: 1
+  min:
+    severity: ERROR
+  push:
+    interval: 300000
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.award.log.model
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.award.log.mapper: info
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    enabled: true
+  show-actuator: false
+  packages-to-scan: com.award.log.controller
+  paths-to-match: "/**"
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,engine-health
+  endpoint:
+    health:
+      show-details: when_authorized
+  health:
+    redis:
+      enabled: ${MANAGEMENT_HEALTH_REDIS_ENABLED:false}
+    elasticsearch:
+      enabled: ${MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED:false}
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# 智能运维 Agent：最小权限执行（Linux 下配置 sudoers；Windows 开发可设 enabled: false）
+agent:
+  # LLM routing stays server-side; browser requests cannot supply endpoints or keys.
+  ai:
+    routing-mode: ${AI_ROUTING_MODE:DEFAULT}
+    default-profile: ${AI_DEFAULT_PROFILE:default}
+    default-model: ${AI_CHAT_MODEL:deepseek-chat}
+    default-context-window: ${AI_CONTEXT_WINDOW:32768}
+    auto-profiles: ${AI_AUTO_PROFILES:}
+    profiles:
+      fast:
+        enabled: ${AI_FAST_ENABLED:false}
+        base-url: ${AI_FAST_BASE_URL:}
+        api-key: ${AI_FAST_API_KEY:}
+        model: ${AI_FAST_MODEL:}
+        context-window: ${AI_FAST_CONTEXT_WINDOW:16384}
+        priority: ${AI_FAST_PRIORITY:10}
+      quality:
+        enabled: ${AI_QUALITY_ENABLED:false}
+        base-url: ${AI_QUALITY_BASE_URL:}
+        api-key: ${AI_QUALITY_API_KEY:}
+        model: ${AI_QUALITY_MODEL:}
+        context-window: ${AI_QUALITY_CONTEXT_WINDOW:131072}
+        priority: ${AI_QUALITY_PRIORITY:20}
+  run-as-user: ${AGENT_RUN_AS_USER:award-agent}
+  min-privilege:
+    enabled: ${AGENT_MIN_PRIVILEGE:true}
+  # MCP 统一安全门：指令长度、参数个数与单字段体积（防参数炸弹与日志注入）
+  security:
+    max-instruction-length: ${AGENT_MAX_INSTRUCTION_LEN:16384}
+    max-parameter-entries: ${AGENT_MAX_PARAM_ENTRIES:48}
+    max-single-string-param-chars: ${AGENT_MAX_PARAM_STRING_CHARS:131072}
+    # true：McpToolDispatcher 可调度工具整体授权（修复 Catalog 扫描遗漏导致的 UNKNOWN_TOOL）
+    mcp-http-allow-all-registered: ${AGENT_MCP_HTTP_ALLOW_ALL:false}
+    # Agentic 风险分：<autoMax 倾向自动执行；[autoMax, confirmMax] 需二次确认；>confirmMax 拒绝
+    # CleanTemp 基分约 4.5，默认 6.5 避免日常预览/白名单清理被评分层反复绊住
+    risk-score-auto-max: ${AGENT_RISK_AUTO_MAX:6.5}
+    risk-score-confirm-max: ${AGENT_RISK_CONFIRM_MAX:9.5}
+    read-only-surface-utterance-min: ${AGENT_READ_ONLY_UTTERANCE_MIN:7.5}
+    # 语义种子 Jaccard 阈值（越高越不易误判 HIGH）
+    intent-semantic-jaccard-min: ${AGENT_INTENT_SEMANTIC_JACCARD:0.55}
+    # true：MEDIUM 意图仍收缩为只读工具面（旧行为）；false：允许智能体在 MCP 策略下调用写类工具（默认）
+    medium-intent-shrink-to-readonly: ${AGENT_MEDIUM_INTENT_READONLY:false}
+    # true：仅 LOW 意图会因高分 utterance 收缩只读；false：任意非 HIGH 均可能因 utterance 只读（更保守）
+    read-only-utterance-applies-to-low-intent-only: ${AGENT_UTTERANCE_READONLY_LOW_ONLY:true}
+    # true：Chat 多步 @Tool 路径遇工具层 MEDIUM 仍拦截；false：放行（默认，与上项配合以支持智能体改配/清理）
+    chat-agent-block-medium-tool-calls: ${AGENT_CHAT_BLOCK_MEDIUM_TOOLS:false}
+    # 只读工具面追加禁止的 MCP 工具名（逗号分隔，与 Bean 短名一致），例：DiskTool
+    read-only-extra-denied-tool-beans: ${AGENT_READ_ONLY_EXTRA_DENY_TOOLS:}
+    intent-use-ml: ${AGENT_INTENT_USE_ML:false}
+    # 训练意图模型（字符 n-gram Softmax，见 docs/patent/experiments/train_intent_risk_model.py）
+    intent-use-trained-ml: ${AGENT_INTENT_USE_TRAINED_ML:true}
+    intent-trained-model: ${AGENT_INTENT_TRAINED_MODEL:classpath:security/intent-risk-model.json}
+  # MCP 工具 @Cacheable 进程内 TTL（毫秒）
+  mcp:
+    cache-ttl-ms: ${AGENT_MCP_CACHE_TTL_MS:45000}
+  assistant:
+    use-tool-agent-default: ${AGENT_ASSISTANT_USE_TOOLS:true}
+    tool-agent-stream-chunk-chars: ${AGENT_ASSISTANT_TOOL_CHUNK:900}
+    tool-catalog-prompt-max: ${AGENT_ASSISTANT_TOOL_CATALOG_MAX:28}
+    orchestrator:
+      enabled: ${AGENT_ORCHESTRATOR_ENABLED:true}
+      log-clean-days: ${AGENT_ORCH_LOG_DAYS:30}
+      temp-clean-days: ${AGENT_ORCH_TEMP_DAYS:7}
+      disk-pressure-percent: ${AGENT_ORCH_DISK_PCT:80}
+  # 全工具融合自主运维：并行感知 → 规则诊断 → 策略内修复 → 验证
+  runtime:
+    enabled: ${AGENT_RUNTIME_ENABLED:true}
+  # 意图：规则优先；未命中时 LLM 语义兜底到 Playbook（需 AI_API_KEY；失败/超时回落 NONE）
+  intent:
+    llm-routing-enabled: ${AGENT_INTENT_LLM_ROUTING:true}
+    llm-routing-min-confidence: ${AGENT_INTENT_LLM_MIN_CONF:0.62}
+    llm-routing-timeout-ms: ${AGENT_INTENT_LLM_TIMEOUT_MS:4500}
+  perception:
+    cache-ttl-ms: ${AGENT_PERCEPTION_CACHE_TTL_MS:60000}
+  autonomous:
+    enabled: ${AGENT_AUTONOMOUS_ENABLED:true}
+    disk-pressure-percent: ${AGENT_AUTONOMOUS_DISK_PCT:80}
+    cpu-warn-percent: ${AGENT_AUTONOMOUS_CPU_PCT:85}
+    mem-warn-percent: ${AGENT_AUTONOMOUS_MEM_PCT:88}
+    log-clean-days: ${AGENT_AUTONOMOUS_LOG_DAYS:30}
+    temp-clean-days: ${AGENT_AUTONOMOUS_TEMP_DAYS:7}
+    health-check-host: ${AGENT_AUTONOMOUS_HEALTH_HOST:127.0.0.1}
+    health-check-ports: ${AGENT_AUTONOMOUS_HEALTH_PORTS:8080,80,443}
+    ping-target: ${AGENT_AUTONOMOUS_PING_TARGET:8.8.8.8}
+    # 已废弃：巡检后全栈 autonomous 双轨已下线，固定仅保留巡检自动修复单轨
+    run-after-patrol: false
+  trust:
+    notify-max: ${AGENT_TRUST_NOTIFY_MAX:6.0}
+  log-safety:
+    lsof-check-enabled: ${AGENT_LOG_SAFETY_LSOF:true}
+  service-restart:
+    # 非关键服务重启白名单；默认见 AgentOpsProperties.ServiceRestart.linuxKylinDefaults()
+    allowlist:
+      - nginx
+      - httpd
+      - rsyslog
+      - syslog-ng
+      - cups
+      - php-fpm
+      - redis
+      - tomcat
+      - grafana-server
+      - prometheus
+      - award-log
+  paths:
+    # 默认清单见 com.award.log.config.AgentOpsProperties.Paths（麒麟/Linux 常见路径）
+    policy-version: path-policy-v2-kylin
+  # Agent Workflow Memory（AWM）：从成功轨迹沉淀可复用处置套路
+  awm:
+    enabled: ${AGENT_AWM_ENABLED:true}
+    seed-on-startup: ${AGENT_AWM_SEED:true}
+    max-workflows-per-domain: ${AGENT_AWM_MAX_PER_DOMAIN:12}
+    failure-insight-enabled: ${AGENT_AWM_FAILURE_INSIGHT:true}
+    failure-insight-max: ${AGENT_AWM_FAILURE_INSIGHT_MAX:24}
+    failure-insight-seed-on-empty: ${AGENT_AWM_FAILURE_INSIGHT_SEED:true}
+    # LLM 归纳（论文 §B）：需配置 AI_API_KEY；失败自动回退 rule-based
+    llm-induction-enabled: ${AGENT_AWM_LLM_INDUCTION:false}
+
+qdrant:
+  url: ${QDRANT_URL:http://localhost:6333}
+  api-key: ${QDRANT_API_KEY:}
+  collection: ${QDRANT_COLLECTION:ops_knowledge}
+
+# 运维知识库 RAG：分块入库 Qdrant，统一助手对话时检索 similarHistoricalCases
+knowledge:
+  enabled: ${KNOWLEDGE_ENABLED:true}
+  chunk-size: ${KNOWLEDGE_CHUNK_SIZE:900}
+  chunk-overlap: ${KNOWLEDGE_CHUNK_OVERLAP:150}
+  search-top-k: ${KNOWLEDGE_SEARCH_TOP_K:5}
+  vector-dimensions: ${KNOWLEDGE_VECTOR_DIM:1024}
+  allow-local-fallback-embedding: ${KNOWLEDGE_LOCAL_EMBED_FALLBACK:true}
+  seed-on-startup: ${KNOWLEDGE_SEED_ON_STARTUP:true}
+
+# 主动巡检：磁盘/告警/异常日志突增/僵尸进程/Drain 新模板；WebSocket channel=patrol_alert；GET /api/ops/patrol/alerts/recent
+# 自动修复：巡检后按磁盘阈值对白名单临时目录 / 日志根执行真实清理（WebSocket channel=patrol_remediation）；生产可关 OPS_AUTO_REMEDIATION_ENABLED
+audit:
+  retention-days: ${AUDIT_RETENTION_DAYS:90}
+  cleanup-cron: ${AUDIT_CLEANUP_CRON:0 0 3 * * ?}
+
+ops:
+  governance:
+    enabled: ${OPS_GOVERNANCE_ENABLED:true}
+    delivery-profile: prod-kylin
+    default-path-tier: NON_CORE
+    default-service-tier: NON_CORE
+    # 服务/路径分级与动作准入矩阵见 OpsGovernanceProperties 默认值；可按环境覆盖
+  dry-run:
+    global: ${OPS_DRY_RUN_GLOBAL:false}
+  remediation:
+    # 文件被占用时跳过而不是卡住
+    skip-locked-files: ${OPS_REMEDIATION_SKIP_LOCKED:true}
+    max-scan-depth: ${OPS_REMEDIATION_MAX_SCAN_DEPTH:8}
+    large-dir-threshold-gb: ${OPS_REMEDIATION_LARGE_DIR_GB:5}
+    prefer-access-days: ${OPS_REMEDIATION_PREFER_ACCESS_DAYS:2}
+    write-probe-timeout-ms: ${OPS_REMEDIATION_WRITE_PROBE_MS:50}
+  websocket:
+    replay-buffer-size: ${OPS_WS_REPLAY_BUFFER:50}
+  auto-remediation:
+    enabled: ${OPS_AUTO_REMEDIATION_ENABLED:true}
+    # HYBRID（默认）：风险分 < risk-patrol-auto-max 的步骤自动执行；≥ 该值进入待您确认（口令「确认执行」）
+    run-mode: ${OPS_AUTO_REMEDIATION_MODE:HYBRID}
+    risk-patrol-auto-max: ${OPS_AUTO_RISK_PATROL_AUTO_MAX:6.0}
+    allow-above-confirm-max-in-pending: ${OPS_AUTO_ALLOW_ABOVE_CONFIRM_MAX:false}
+    proposal-ttl-ms: ${OPS_AUTO_REMEDIATION_TTL_MS:1800000}
+    propose-temp-clean-disk-min: ${OPS_AUTO_PROPOSE_TEMP_DISK:80}
+    propose-log-clean-disk-min: ${OPS_AUTO_PROPOSE_LOG_DISK:85}
+    disk-temp-clean-min-percent: ${OPS_AUTO_DISK_TEMP_MIN:88}
+    disk-log-clean-min-percent: ${OPS_AUTO_DISK_LOG_MIN:93}
+    temp-clean-days: ${OPS_AUTO_TEMP_DAYS:7}
+    log-clean-days: ${OPS_AUTO_LOG_DAYS:30}
+    cooldown-ms: ${OPS_AUTO_REMEDIATION_COOLDOWN_MS:3600000}
+    on-log-anomaly-propose-log-clean: ${OPS_AUTO_LOG_ANOMALY_LOG_CLEAN:true}
+    on-alarm-severity-propose-log-clean: ${OPS_AUTO_ALARM_LOG_CLEAN:false}
+    cpu-pain-restart-services: ${OPS_AUTO_CPU_RESTART_SVC:}
+    cpu-restart-cpu-min-percent: ${OPS_AUTO_CPU_RESTART_MIN:85}
+  patrol:
+    enabled: ${OPS_PATROL_ENABLED:true}
+    cron: ${OPS_PATROL_CRON:0 */5 * * * ?}
+    disk-warn-percent: ${OPS_PATROL_DISK_WARN:80}
+    cpu-warn-percent: ${OPS_PATROL_CPU_WARN:85}
+    anomaly-spike-factor: ${OPS_PATROL_ANOMALY_SPIKE:2.0}
+    inspect-roots: ${OPS_PATROL_INSPECT_ROOTS:/var/log,/tmp}
+    dedup-window-ms: ${OPS_PATROL_DEDUP_MS:900000}
+    history-retention-days: ${OPS_PATROL_HISTORY_RETENTION_DAYS:30}
+    history-cleanup-cron: ${OPS_PATROL_HISTORY_CLEANUP_CRON:0 15 4 * * ?}
+    disk-hotspot-top-n: ${OPS_PATROL_DISK_HOTSPOT_N:5}
+    disk-hotspot-max-depth: ${OPS_PATROL_DISK_HOTSPOT_DEPTH:2}
+    disk-hotspot-visit-budget: ${OPS_PATROL_DISK_HOTSPOT_BUDGET:2500}
+    disk-hotspot-child-limit: ${OPS_PATROL_DISK_HOTSPOT_CHILD_LIMIT:120}
+    disk-hotspot-cache-ms: ${OPS_PATROL_DISK_HOTSPOT_CACHE_MS:120000}
+    disk-hotspot-command-timeout-ms: ${OPS_PATROL_DISK_HOTSPOT_TIMEOUT_MS:8000}
+    error-alarm-min: ${OPS_PATROL_ERROR_ALARM_MIN:3}
+    anomaly-min-delta: ${OPS_PATROL_ANOMALY_MIN_DELTA:5}
+    anomaly-baseline-ema-alpha: ${OPS_PATROL_ANOMALY_EMA:0.35}
+    # 启动后异步跑一次巡检，填充 correlation/latest，避免首屏空窗
+    warm-on-startup: ${OPS_PATROL_WARM_START:true}

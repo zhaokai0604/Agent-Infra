@@ -1,0 +1,120 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Windows / misc installers (勿提交大体积安装包)
+*.msi
+*.exe
+
+# virtual machine crash logs
+hs_err_pid*
+replay_pid*
+
+# Maven
+target/
+.flattened-pom.xml
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE / 本地工具
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.arts/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 前端构建产物（克隆后执行 npm install && npm run build）
+frontend/dist/
+frontend/miniprogram_npm/
+
+# Environment variables - 敏感配置文件，禁止提交
+.env
+.env.local
+.env.*.local
+
+# 生产密钥覆盖（可提交的 src/main/resources/application-prod.yml 仅含环境变量占位）
+# 若在项目根或 config/ 放置带真实密钥的同名文件，仍忽略
+/application-prod.yml
+/application-prod.properties
+/config/application-prod.yml
+/config/application-prod.properties
+!src/main/resources/application-prod.yml
+
+# 本机 QQ 邮箱授权码等（由 application-local.example.yml 复制改名，切勿提交）
+src/main/resources/application-local.yml
+application-local.yml
+config/application-local.yml
+
+# 运行时/本地数据
+logs/
+storage/
+outputs/
+data/
+output/
+tmp/
+tmp_patent_imgs/
+perf/runtime/
+perf/data/results/
+
+# 已从交付仓库移除的研究/比赛资料，避免再次误加入
+docs/patent/
+docs/competition/
+docs/archive/
+docs/_doc_extract/
+
+# 调试输出
+vite-debug.log
+
+# 性能测试用日志样本（运行 perf/data/generate-log-samples.ps1 生成）
+perf/data/logs/*.log
+!perf/data/logs/.gitkeep
+
+# 一键部署脚本输出（含 Jar 与 dist）
+deploy/release/
+
+# 告警运行时配置（含邮箱等，用 alarm-config.example.json 为模板本地复制）
+alarm-config.json
+agent-path-policy-overrides.json
+system-config-overrides.json

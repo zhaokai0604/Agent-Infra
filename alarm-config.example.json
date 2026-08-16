@@ -1,0 +1,9 @@
+{
+  "default": {
+    "alarmLevel": "ERROR",
+    "errorThreshold": 5,
+    "enabled": true,
+    "cooldownMs": 300000
+  },
+  "tasks": {}
+}

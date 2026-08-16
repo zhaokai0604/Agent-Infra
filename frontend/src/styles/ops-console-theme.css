@@ -1,0 +1,357 @@
+/**
+ * ThreshCore 运维控制台 — 企业级视觉令牌（Datadog / Grafana 类：深侧栏 + 浅工作区）
+ */
+:root {
+  --el-color-primary: #0d9488;
+  --el-color-primary-light-3: #14b8a6;
+  --el-color-primary-light-5: #2dd4bf;
+  --el-color-primary-dark-2: #0f766e;
+
+  --ops-font: 'Inter', 'DM Sans', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif;
+  --ops-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --ops-bg: #f1f5f9;
+  --ops-bg-accent: none;
+  --ops-panel: #ffffff;
+  --ops-panel-soft: #f8fafc;
+  --ops-border: #e2e8f0;
+  --ops-border-soft: #f1f5f9;
+  --ops-text: #0f172a;
+  --ops-text-subtle: #64748b;
+  --ops-text-muted: #64748b;
+  --ops-primary: #0d9488;
+  --ops-primary-hover: #0f766e;
+  --ops-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --ops-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --ops-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --ops-radius: 10px;
+  --ops-radius-sm: 6px;
+  --ops-header-h: 52px;
+
+  --shell-bg: #fafafa;
+  --shell-sidebar: #ffffff;
+  --shell-border: #ebebeb;
+  --shell-glow: rgba(13, 148, 136, 0.06);
+  --shell-accent: #0d9488;
+  --shell-accent-soft: rgba(13, 148, 136, 0.08);
+  --shell-text: #1a1a1a;
+  --shell-muted: #888888;
+  --shell-nav-hover: rgba(0, 0, 0, 0.04);
+  --shell-nav-active: rgba(13, 148, 136, 0.1);
+}
+
+body {
+  background: var(--ops-bg);
+  color: var(--ops-text);
+  font-family: var(--ops-font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell-content,
+.main-content,
+.el-main,
+.content-container,
+.page-container {
+  background-color: var(--ops-bg);
+  background-image: none;
+}
+
+.el-card {
+  border-radius: var(--ops-radius);
+  border: 1px solid var(--ops-border);
+  box-shadow: var(--ops-shadow-sm);
+  background: var(--ops-panel);
+}
+
+.el-card:hover {
+  box-shadow: var(--ops-shadow-md);
+  border-color: #cbd5e1;
+}
+
+.el-card__header {
+  background: var(--ops-panel-soft);
+  border-bottom: 1px solid var(--ops-border-soft);
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ops-text);
+}
+
+.el-table {
+  --el-table-header-bg-color: var(--ops-panel-soft);
+  --el-table-tr-bg-color: #ffffff;
+  --el-table-row-hover-bg-color: rgba(13, 148, 136, 0.04);
+  --el-table-border-color: var(--ops-border-soft);
+  font-size: 13px;
+}
+
+.el-table th {
+  color: var(--ops-text-subtle);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.el-form-item__label {
+  color: var(--ops-text);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  border-radius: var(--ops-radius-sm);
+  box-shadow: 0 0 0 1px var(--ops-border) inset;
+  transition: box-shadow 0.15s ease;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px #94a3b8 inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--ops-primary) inset !important;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--ops-primary);
+  --el-button-border-color: var(--ops-primary);
+  --el-button-hover-bg-color: var(--ops-primary-hover);
+  --el-button-hover-border-color: var(--ops-primary-hover);
+}
+
+.el-button {
+  border-radius: var(--ops-radius-sm);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.el-button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.el-tag {
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.el-dialog {
+  border-radius: var(--ops-radius);
+  border: 1px solid var(--ops-border);
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  border-bottom: 1px solid var(--ops-border-soft);
+  padding: 14px 18px 10px;
+  font-weight: 600;
+}
+
+.title,
+.card-title,
+.section-title {
+  color: var(--ops-text);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.sub-title,
+.muted,
+.desc {
+  color: var(--ops-text-subtle);
+}
+
+/* 功能页遗留样式收敛 */
+.main-content [class*='container'],
+.main-content [class*='dashboard'],
+.main-content [class*='analysis'],
+.main-content [class*='monitor'],
+.main-content [class*='management'],
+.main-content [class*='page'] {
+  background: transparent !important;
+}
+
+.main-content [class*='header'],
+.main-content [class*='toolbar'],
+.main-content [class*='filter'] {
+  background: transparent !important;
+  color: var(--ops-text) !important;
+  box-shadow: none !important;
+  border-color: var(--ops-border-soft) !important;
+}
+
+.main-content [class*='card'],
+.main-content [class*='panel'],
+.main-content [class*='box'] {
+  border-radius: var(--ops-radius) !important;
+  background: var(--ops-panel) !important;
+  border: 1px solid var(--ops-border) !important;
+  box-shadow: var(--ops-shadow-sm) !important;
+}
+
+.main-content [class*='card']:hover,
+.main-content [class*='panel']:hover,
+.main-content [class*='box']:hover {
+  transform: none !important;
+  box-shadow: var(--ops-shadow-md) !important;
+}
+
+.main-content [class*='title'] {
+  color: var(--ops-text) !important;
+  text-shadow: none !important;
+}
+
+.main-content [class*='sub'],
+.main-content [class*='desc'],
+.main-content [class*='hint'] {
+  color: var(--ops-text-subtle) !important;
+}
+
+.main-content [class*='metric-value'],
+.main-content [class*='stat-value'],
+.main-content [class*='kpi-value'] {
+  color: var(--ops-text) !important;
+  text-shadow: none !important;
+}
+
+.main-content [class*='metric-unit'],
+.main-content [class*='kpi-label'],
+.main-content [class*='stat-label'] {
+  color: var(--ops-text-subtle) !important;
+}
+
+/* 勿用 [class*='chart']：会命中 .chart-container，盖住 ECharts canvas */
+.main-content .chart-card.el-card,
+.main-content .gauge-chart,
+.main-content [class*='legend']:not(.echarts-host):not(.echarts-host *),
+.main-content [class*='baseline'] {
+  background: var(--ops-panel-soft) !important;
+  border-color: var(--ops-border-soft) !important;
+  box-shadow: none !important;
+}
+
+.main-content .echarts-host {
+  background: transparent !important;
+}
+
+.main-content .el-table__row:hover {
+  transform: none !important;
+}
+
+.main-content .el-dialog,
+.main-content .el-message-box {
+  border-radius: var(--ops-radius) !important;
+  box-shadow: var(--ops-shadow-lg) !important;
+}
+
+.main-content .el-dialog__header,
+.main-content .el-message-box__header {
+  background: var(--ops-panel-soft) !important;
+  color: var(--ops-text) !important;
+}
+
+.main-content .el-dialog__footer,
+.main-content .dialog-footer {
+  background: var(--ops-panel-soft) !important;
+}
+
+.main-content .el-progress__bar__inner {
+  box-shadow: none !important;
+}
+
+/* 全局：禁止功能页 hover 位移（遗留 scoped 样式） */
+.main-content *:hover {
+  animation-duration: inherit;
+}
+
+.main-content .el-button:hover,
+.main-content [class*='card']:hover,
+.main-content [class*='btn']:hover,
+.main-content [class*='item']:hover {
+  transform: none !important;
+}
+
+.main-content .el-result,
+.main-content .el-empty {
+  padding: 24px 16px;
+}
+
+/* 工作区滚动条 */
+.shell-content,
+.ops-page {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.shell-content::-webkit-scrollbar,
+.ops-page::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.shell-content::-webkit-scrollbar-thumb,
+.ops-page::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.shell-content::-webkit-scrollbar-thumb:hover,
+.ops-page::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 页面切换动画 */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* 统一 border-card 标签页 */
+.ops-tabs.el-tabs--border-card {
+  background: var(--ops-panel);
+  border: 1px solid var(--ops-border);
+  border-radius: var(--ops-radius);
+  overflow: hidden;
+  box-shadow: var(--ops-shadow-sm);
+}
+
+.ops-tabs.el-tabs--border-card > .el-tabs__header {
+  margin: 0;
+  background: var(--ops-panel-soft);
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.ops-tabs.el-tabs--border-card > .el-tabs__content {
+  padding: 16px 18px;
+}
+
+/* 语义色工具类 */
+.text-danger {
+  color: #dc2626;
+}
+
+.text-success {
+  color: #16a34a;
+}
+
+.topbar-perf-popover.el-popover.el-popper {
+  padding: 10px 12px !important;
+}

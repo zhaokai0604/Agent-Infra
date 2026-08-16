@@ -1,0 +1,338 @@
+/**
+ * 各功能页统一布局（日志 / 告警 / 历史 / 审计 / MCP 等）
+ */
+.ops-page {
+  min-height: 100%;
+  color: var(--ops-text);
+}
+
+.ops-page > .el-card,
+.ops-page .ops-surface-card {
+  border-radius: var(--ops-radius);
+  border: 1px solid var(--ops-border);
+  box-shadow: var(--ops-shadow-sm);
+  background: var(--ops-panel);
+}
+
+.ops-page .card-header,
+.ops-page .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ops-page .card-header > span,
+.ops-page .header > span:first-child,
+.ops-page .card-header .title,
+.ops-page .title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ops-text);
+  letter-spacing: -0.02em;
+}
+
+.ops-page .card-header-actions,
+.ops-page .header-actions,
+.ops-page .header > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ops-page .filter-row,
+.ops-page .filter-container {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: var(--ops-panel-soft);
+  border: 1px solid var(--ops-border-soft);
+  border-radius: var(--ops-radius-sm);
+}
+
+.ops-page .stats-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.ops-page .stat-card {
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid var(--ops-border) !important;
+  box-shadow: none !important;
+  background: var(--ops-panel) !important;
+}
+
+.ops-page .stat-card:hover {
+  transform: none !important;
+  box-shadow: var(--ops-shadow-sm) !important;
+}
+
+.ops-page .stat-label {
+  font-size: 12px;
+  color: var(--ops-text-subtle);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.ops-page .stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ops-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.ops-page .charts-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.ops-page .chart-card {
+  flex: 1;
+  min-width: 280px;
+  border: 1px solid var(--ops-border) !important;
+}
+
+.ops-page .chart-container {
+  width: 100%;
+  height: 280px;
+}
+
+.ops-page .table-card {
+  margin-top: 14px;
+}
+
+.ops-page .hero-text h1 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: var(--ops-text) !important;
+  text-shadow: none !important;
+  margin-bottom: 8px !important;
+}
+
+.ops-page .hero-text p {
+  font-size: 13px !important;
+  color: var(--ops-text-subtle) !important;
+}
+
+.ops-page .upload-box {
+  border-color: var(--ops-border) !important;
+  border-radius: var(--ops-radius) !important;
+  box-shadow: var(--ops-shadow-sm) !important;
+  background: var(--ops-panel) !important;
+}
+
+.ops-page .upload-box::before {
+  display: none !important;
+}
+
+.ops-page .upload-box:hover {
+  transform: none !important;
+  border-color: var(--ops-primary) !important;
+  background: var(--ops-panel-soft) !important;
+  box-shadow: var(--ops-shadow-md) !important;
+}
+
+.ops-page .upload-icon {
+  color: var(--ops-primary) !important;
+}
+
+.ops-page .upload-box:hover .upload-icon {
+  transform: none !important;
+}
+
+.ops-page .processing-section {
+  border: 1px solid var(--ops-border) !important;
+  border-radius: var(--ops-radius) !important;
+  box-shadow: var(--ops-shadow-sm) !important;
+}
+
+.ops-page .processing-spinner {
+  border-top-color: var(--ops-primary) !important;
+}
+
+.ops-page .scan-progress .el-progress__bar__inner {
+  background: var(--ops-primary) !important;
+  box-shadow: none !important;
+}
+
+.ops-page .kpi-card {
+  border: 1px solid var(--ops-border) !important;
+  border-radius: var(--ops-radius-sm) !important;
+  box-shadow: var(--ops-shadow-sm) !important;
+  background: var(--ops-panel) !important;
+}
+
+.ops-page .kpi-card:hover,
+.ops-page .detail-card:hover,
+.ops-page .chart-card:hover,
+.ops-page .advice-card:hover {
+  transform: none !important;
+  box-shadow: var(--ops-shadow-md) !important;
+}
+
+.ops-page .health-score {
+  background: var(--ops-panel-soft) !important;
+}
+
+.ops-page .kpi-desc,
+.ops-page .kpi-value {
+  color: var(--ops-text) !important;
+  text-shadow: none !important;
+}
+
+.ops-page .kpi-title,
+.ops-page .kpi-label {
+  color: var(--ops-text-subtle) !important;
+}
+
+.ops-page .kpi-card:hover .stat-icon-wrapper {
+  transform: none !important;
+}
+
+.ops-page .action-card .el-button:hover,
+.ops-page .task-controls .el-button:hover {
+  transform: none !important;
+}
+
+.ops-page .detail-card .el-card__header,
+.ops-page .chart-card .el-card__header,
+.ops-page .advice-card .el-card__header {
+  background: var(--ops-panel-soft) !important;
+  border-bottom: 1px solid var(--ops-border-soft) !important;
+  padding: 12px 16px !important;
+  border-radius: 0 !important;
+}
+
+.ops-page .detail-card .title,
+.ops-page .chart-card .title,
+.ops-page .advice-card .title {
+  border-left-color: var(--ops-primary) !important;
+  color: var(--ops-text) !important;
+}
+
+.ops-page .event-id-tag {
+  color: var(--ops-primary) !important;
+  background: rgba(13, 148, 136, 0.08) !important;
+}
+
+.ops-page .event-id-tag:hover {
+  transform: none !important;
+  background: rgba(13, 148, 136, 0.14) !important;
+}
+
+.ops-page .legend-item:hover,
+.ops-page .advice-item:hover {
+  transform: none !important;
+}
+
+.ops-page .advice-item:nth-child(odd) {
+  border-left-color: var(--ops-primary) !important;
+  background: rgba(13, 148, 136, 0.04) !important;
+}
+
+.ops-page .ai-dialog .el-dialog__header {
+  background: var(--ops-panel-soft) !important;
+  color: var(--ops-text) !important;
+  border-bottom: 1px solid var(--ops-border) !important;
+  padding: 14px 18px !important;
+  border-radius: 0 !important;
+}
+
+.ops-page .ai-dialog .el-dialog__title {
+  color: var(--ops-text) !important;
+  font-size: 15px !important;
+}
+
+.ops-page .ai-avatar {
+  background: rgba(13, 148, 136, 0.12) !important;
+  color: var(--ops-primary) !important;
+  font-size: 0 !important;
+  box-shadow: none !important;
+}
+
+.ops-page .ai-markdown-body h1,
+.ops-page .ai-markdown-body h2,
+.ops-page .ai-markdown-body h3 {
+  color: var(--ops-text) !important;
+}
+
+.ops-page .stack-trace-box {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-radius: var(--ops-radius-sm) !important;
+}
+
+.ops-page .history-container {
+  padding: 0 !important;
+}
+
+.ops-page .log-analysis-dashboard {
+  padding: 0 !important;
+}
+
+.ops-page .dashboard-card,
+.ops-page .analysis-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.ops-page .tool-console {
+  padding: 0 !important;
+}
+
+/* 共享统计胶囊（工具箱 / MCP 技能 / 各页顶栏） */
+.ops-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ops-stat-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ops-border);
+  background: var(--ops-panel);
+  font-size: 13px;
+}
+
+.ops-stat-pill--ok {
+  border-color: rgba(13, 148, 136, 0.35);
+  background: rgba(13, 148, 136, 0.06);
+}
+
+.ops-stat-pill__label {
+  color: var(--ops-text-subtle);
+}
+
+.ops-stat-pill__value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ops-text);
+}
+
+/* 表内工具栏 */
+.ops-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ops-table-toolbar__hint {
+  font-size: 12px;
+  color: var(--ops-text-subtle);
+}

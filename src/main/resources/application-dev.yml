@@ -1,0 +1,91 @@
+spring:
+  main:
+    lazy-initialization: true
+  sql:
+    init:
+      # 本地库已手动初始化时关闭自动跑 schema.sql，避免重复建表导致启动失败
+      mode: never
+  # 数据库密码：勿在此覆盖；由 application.yml import 的 application-local.yml 或环境变量 DB_PASSWORD 提供
+
+# 开发阶段：登录即可查看「执行审计」列表（无需管理员角色）
+app:
+  security:
+    ai-audit-relaxed-read: true
+  # 单端口 dev：登录/MCP/Agent 与业务 API 均走 8088（与 prod-kylin 一致）
+  management:
+    enabled: false
+
+# Windows 本地：巡检扫描用户目录与项目 logs，避免默认 /var/log 空跑
+ops:
+  dry-run:
+    global: false
+  remediation:
+    # 文件被占用时，跳过而不是卡住
+    skip-locked-files: true
+    max-scan-depth: 8
+    large-dir-threshold-gb: 5
+    prefer-access-days: 2
+    write-probe-timeout-ms: 50
+  auto-remediation:
+    enabled: true
+    run-mode: HYBRID
+    risk-patrol-auto-max: 6.0
+    allow-above-confirm-max-in-pending: true
+    propose-temp-clean-disk-min: 1
+    propose-log-clean-disk-min: 1
+    disk-temp-clean-min-percent: 1
+    disk-log-clean-min-percent: 1
+    cooldown-ms: 60000
+    on-log-anomaly-propose-log-clean: true
+    on-alarm-severity-propose-log-clean: true
+  patrol:
+    enabled: true
+    disk-warn-percent: 1
+    cpu-warn-percent: 1
+    inspect-roots: ${OPS_PATROL_INSPECT_ROOTS:C:/Users/Administrator/AppData/Local/Temp,C:/Windows/Temp}
+
+# 本地 Windows / 无 sudo 用户时可改为 false，避免 sudo -u 失败
+agent:
+  paths:
+    policy-version: path-policy-v2-windows-local
+    windows-read-prefixes:
+      - C:/Windows/Logs
+      - C:/Windows/System32/winevt/Logs
+      - C:/inetpub/logs
+      - C:/ProgramData/logs
+      - C:/ProgramData/Microsoft/Windows/WER/ReportArchive
+      - C:/ProgramData/Microsoft/Windows/WER/ReportQueue
+      - C:/Users/Administrator/AppData/Local/Temp
+      - C:/Windows/Temp
+      - logs
+    windows-clean-roots:
+      - C:/Users/Administrator/AppData/Local/Temp
+      - C:/Windows/Temp
+    windows-log-cleanup-roots:
+      - C:/Windows/Logs
+      - C:/Windows/System32/winevt/Logs
+      - C:/inetpub/logs
+      - C:/ProgramData/logs
+      - logs
+  runtime:
+    enabled: true
+  intent:
+    llm-routing-enabled: true
+  assistant:
+    use-tool-agent-default: true
+    orchestrator:
+      enabled: true
+  autonomous:
+    enabled: true
+    disk-pressure-percent: 1
+    cpu-warn-percent: 1
+  min-privilege:
+    enabled: false
+
+knowledge:
+  enabled: true
+  seed-on-startup: true
+
+logging:
+  level:
+    com.award.log: DEBUG

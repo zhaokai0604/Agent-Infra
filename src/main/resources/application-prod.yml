@@ -1,0 +1,26 @@
+# 生产 profile（可提交）：密钥一律走环境变量，勿写入真实密码 / API Key。
+# 启动：--spring.profiles.active=prod
+# 麒麟：--spring.profiles.active=prod-kylin（合并 application-kylin.yml）
+
+spring:
+  datasource:
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/log_analysis?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+  ai:
+    openai:
+      api-key: ${AI_API_KEY:}
+      base-url: ${AI_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${AI_CHAT_MODEL:deepseek-chat}
+
+app:
+  security:
+    ai-audit-relaxed-read: false
+
+agent:
+  min-privilege:
+    enabled: true

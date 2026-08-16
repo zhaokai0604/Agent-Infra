@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.DecisionFeedbackMapper">
+    <insert id="upsert" parameterType="com.award.log.model.DecisionFeedback" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO decision_feedback(decision_id, actual_alert, reviewer, remark, create_time,
+                                      log_content, log_level, log_template, model_confidence, is_trained,
+                                      error_rate_1m, error_1m, total_1m, interval_ms)
+        VALUES(#{decisionId}, #{actualAlert}, #{reviewer}, #{remark}, NOW(),
+               #{logContent}, #{logLevel}, #{logTemplate}, #{modelConfidence}, #{isTrained},
+               #{errorRate1m}, #{error1m}, #{total1m}, #{intervalMs})
+        ON DUPLICATE KEY UPDATE
+          actual_alert = VALUES(actual_alert),
+          reviewer = VALUES(reviewer),
+          remark = VALUES(remark),
+          create_time = NOW(),
+          log_content = VALUES(log_content),
+          log_level = VALUES(log_level),
+          log_template = VALUES(log_template),
+          model_confidence = VALUES(model_confidence),
+          is_trained = VALUES(is_trained),
+          error_rate_1m = VALUES(error_rate_1m),
+          error_1m = VALUES(error_1m),
+          total_1m = VALUES(total_1m),
+          interval_ms = VALUES(interval_ms)
+    </insert>
+
+    <select id="selectUntrainedSamples" resultType="com.award.log.model.DecisionFeedback">
+        SELECT id, decision_id, actual_alert, reviewer, remark, create_time,
+               log_content, log_level, log_template, model_confidence, is_trained,
+               error_rate_1m, error_1m, total_1m, interval_ms
+        FROM decision_feedback
+        WHERE is_trained = 0 OR is_trained IS NULL
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectUntrainedSamplesPage" resultType="com.award.log.model.DecisionFeedback">
+        SELECT id, decision_id, actual_alert, reviewer, remark, create_time,
+               log_content, log_level, log_template, model_confidence, is_trained,
+               error_rate_1m, error_1m, total_1m, interval_ms
+        FROM decision_feedback
+        WHERE is_trained = 0 OR is_trained IS NULL
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="markAsTrained">
+        UPDATE decision_feedback
+        SET is_trained = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="countUntrained" resultType="int">
+        SELECT COUNT(*)
+        FROM decision_feedback
+        WHERE is_trained = 0 OR is_trained IS NULL
+    </select>
+
+    <select id="selectByDecisionId" resultType="com.award.log.model.DecisionFeedback">
+        SELECT id, decision_id, actual_alert, reviewer, remark, create_time,
+               log_content, log_level, log_template, model_confidence, is_trained,
+               error_rate_1m, error_1m, total_1m, interval_ms
+        FROM decision_feedback
+        WHERE decision_id = #{decisionId}
+        LIMIT 1
+    </select>
+</mapper>

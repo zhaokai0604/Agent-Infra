@@ -1,0 +1,104 @@
+/**
+ * Agent 工作区布局与视觉令牌
+ */
+:root {
+  --agent-sidebar-w: 260px;
+  --agent-sidebar-collapsed-w: 72px;
+  --agent-context-w: 300px;
+  --agent-chat-max-w: 780px;
+  --agent-composer-radius: 16px;
+  --agent-chip-bg: #f4f4f5;
+  --agent-chip-hover: #ebebec;
+  --agent-muted: #71717a;
+  --agent-surface: #ffffff;
+  --agent-border: #e4e4e7;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  min-height: 100%;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-shell--agent {
+  background: var(--agent-surface);
+}
+
+.workspace-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workspace-body--agent {
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.shell-topbar--minimal {
+  min-height: 48px;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--agent-border);
+  box-shadow: none;
+}
+
+.shell-topbar--minimal .topbar-title h1 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.shell-topbar--minimal .topbar-title span {
+  display: none;
+}
+
+.topbar-mode-bar {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.agent-chat-column {
+  width: 100%;
+  max-width: var(--agent-chat-max-w);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.ops-context-panel {
+  flex-shrink: 0;
+  width: var(--agent-context-w);
+  border-left: 1px solid var(--agent-border);
+  background: var(--ops-panel-soft);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ops-context-panel__header {
+  padding: 14px 16px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ops-text);
+  border-bottom: 1px solid var(--agent-border);
+}
+
+.ops-context-panel__body {
+  padding: 12px;
+  flex: 1;
+}
+
+@media (max-width: 1200px) {
+  .ops-context-panel {
+    display: none;
+  }
+}

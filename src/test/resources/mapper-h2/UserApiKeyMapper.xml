@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.UserApiKeyMapper">
+
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultType="com.award.log.model.UserApiKey">
+        SELECT id, user_id, key_name, key_prefix, key_hash, scope_bundle, status, last_used_at, created_at, updated_at, revoked_at
+        FROM user_api_key
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="selectByPrefix" parameterType="java.lang.String" resultType="com.award.log.model.UserApiKey">
+        SELECT id, user_id, key_name, key_prefix, key_hash, scope_bundle, status, last_used_at, created_at, updated_at, revoked_at
+        FROM user_api_key
+        WHERE key_prefix = #{keyPrefix}
+        ORDER BY id DESC
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Long" resultType="com.award.log.model.UserApiKey">
+        SELECT id, user_id, key_name, key_prefix, key_hash, scope_bundle, status, last_used_at, created_at, updated_at, revoked_at
+        FROM user_api_key
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.award.log.model.UserApiKey" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_api_key (
+            user_id, key_name, key_prefix, key_hash, scope_bundle, status, last_used_at, created_at, updated_at, revoked_at
+        ) VALUES (
+            #{userId}, #{keyName}, #{keyPrefix}, #{keyHash}, #{scopeBundle}, #{status}, #{lastUsedAt}, NOW(), NOW(), #{revokedAt}
+        )
+    </insert>
+
+    <update id="updateKeyMaterial">
+        UPDATE user_api_key
+        SET key_prefix = #{keyPrefix},
+            key_hash = #{keyHash},
+            updated_at = #{updatedAt},
+            last_used_at = NULL,
+            revoked_at = NULL,
+            status = 'ACTIVE'
+        WHERE id = #{id}
+    </update>
+
+    <update id="revoke">
+        UPDATE user_api_key
+        SET status = 'REVOKED',
+            revoked_at = #{revokedAt},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="touchLastUsed">
+        UPDATE user_api_key
+        SET last_used_at = #{lastUsedAt},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countActiveByUserId" parameterType="java.lang.Integer" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM user_api_key
+        WHERE user_id = #{userId}
+          AND status = 'ACTIVE'
+    </select>
+</mapper>

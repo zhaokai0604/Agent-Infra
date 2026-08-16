@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.LogAnalysisDetailMapper">
+
+    <resultMap id="BaseResultMap" type="com.award.log.model.LogAnalysisDetail">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="task_id" jdbcType="VARCHAR" property="taskId" />
+        <result column="log_time" jdbcType="VARCHAR" property="logTime" />
+        <result column="severity" jdbcType="VARCHAR" property="severity" />
+        <result column="protocol" jdbcType="VARCHAR" property="protocol" />
+        <result column="pid" jdbcType="VARCHAR" property="pid" />
+        <result column="is_anomaly" jdbcType="BOOLEAN" property="isAnomaly" />
+        <result column="anomaly_score" jdbcType="DOUBLE" property="anomalyScore" />
+        <result column="anomaly_reasons" jdbcType="VARCHAR" property="anomalyReasons" />
+        <result column="desensitized_log" jdbcType="VARCHAR" property="desensitizedLog" />
+        <result column="template_id" jdbcType="VARCHAR" property="templateId" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, task_id, log_time, severity, protocol, pid, is_anomaly, anomaly_score, anomaly_reasons, desensitized_log, template_id
+    </sql>
+
+    <select id="selectByTaskId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+    </select>
+
+    <select id="countByTaskId" resultType="long">
+        select count(*) from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+    </select>
+
+    <select id="countAnomaliesByTaskId" resultType="long">
+        select count(*) from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+          and is_anomaly = 1
+    </select>
+
+    <select id="selectAnomaliesByTaskId" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+          and is_anomaly = 1
+        order by anomaly_score desc, id asc
+        limit #{limit}
+    </select>
+
+    <select id="selectByTaskIdPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+        <if test="anomalyOnly != null and anomalyOnly">
+          and is_anomaly = 1
+        </if>
+        order by id asc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="selectSeverityDistributionByTaskId" resultType="map">
+        select severity as severity, count(*) as cnt
+        from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+        group by severity
+    </select>
+
+    <insert id="insert" parameterType="com.award.log.model.LogAnalysisDetail" useGeneratedKeys="true" keyProperty="id">
+        insert into log_analysis_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">task_id,</if>
+            <if test="logTime != null">log_time,</if>
+            <if test="severity != null">severity,</if>
+            <if test="protocol != null">protocol,</if>
+            <if test="pid != null">pid,</if>
+            <if test="isAnomaly != null">is_anomaly,</if>
+            <if test="anomalyScore != null">anomaly_score,</if>
+            <if test="anomalyReasons != null">anomaly_reasons,</if>
+            <if test="desensitizedLog != null">desensitized_log,</if>
+            <if test="templateId != null">template_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">#{taskId,jdbcType=VARCHAR},</if>
+            <if test="logTime != null">#{logTime,jdbcType=VARCHAR},</if>
+            <if test="severity != null">#{severity,jdbcType=VARCHAR},</if>
+            <if test="protocol != null">#{protocol,jdbcType=VARCHAR},</if>
+            <if test="pid != null">#{pid,jdbcType=VARCHAR},</if>
+            <if test="isAnomaly != null">#{isAnomaly,jdbcType=BOOLEAN},</if>
+            <if test="anomalyScore != null">#{anomalyScore,jdbcType=DOUBLE},</if>
+            <if test="anomalyReasons != null">#{anomalyReasons,jdbcType=VARCHAR},</if>
+            <if test="desensitizedLog != null">#{desensitizedLog,jdbcType=VARCHAR},</if>
+            <if test="templateId != null">#{templateId,jdbcType=VARCHAR},</if>
+        </trim>
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        insert into log_analysis_detail
+        (task_id, log_time, severity, protocol, pid, is_anomaly, anomaly_score, anomaly_reasons, desensitized_log, template_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.taskId,jdbcType=VARCHAR},
+            #{item.logTime,jdbcType=VARCHAR},
+            #{item.severity,jdbcType=VARCHAR},
+            #{item.protocol,jdbcType=VARCHAR},
+            #{item.pid,jdbcType=VARCHAR},
+            #{item.isAnomaly,jdbcType=BOOLEAN},
+            #{item.anomalyScore,jdbcType=DOUBLE},
+            #{item.anomalyReasons,jdbcType=VARCHAR},
+            #{item.desensitizedLog,jdbcType=VARCHAR},
+            #{item.templateId,jdbcType=VARCHAR}
+            )
+        </foreach>
+    </insert>
+
+    <select id="countAll" resultType="java.lang.Long">
+        select count(*) from log_analysis_detail
+    </select>
+
+    <select id="countSinceDays" resultType="java.lang.Long">
+        select count(*)
+        from log_analysis_detail d
+        inner join log_analysis_task t on d.task_id = t.task_id
+        where t.create_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+    </select>
+
+    <select id="selectAnomalySeverityDistribution" resultType="java.util.Map">
+        SELECT COALESCE(NULLIF(TRIM(d.severity), ''), 'UNKNOWN') AS type,
+               COUNT(*) AS count
+        FROM log_analysis_detail d
+        INNER JOIN log_analysis_task t ON d.task_id = t.task_id
+        WHERE t.create_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+          AND d.is_anomaly = 1
+        GROUP BY COALESCE(NULLIF(TRIM(d.severity), ''), 'UNKNOWN')
+        ORDER BY count DESC
+    </select>
+
+    <delete id="deleteByTaskId" parameterType="java.lang.String">
+        delete from log_analysis_detail
+        where task_id = #{taskId,jdbcType=VARCHAR}
+    </delete>
+
+    <select id="selectRecentDetails" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM log_analysis_detail d
+        INNER JOIN log_analysis_task t ON d.task_id = t.task_id
+        WHERE t.create_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="severity != null and severity != ''">
+            AND UPPER(d.severity) LIKE CONCAT('%', UPPER(#{severity}), '%')
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND d.desensitized_log LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="anomalyOnly != null and anomalyOnly">
+            AND d.is_anomaly = 1
+        </if>
+        ORDER BY t.create_time DESC, d.id DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

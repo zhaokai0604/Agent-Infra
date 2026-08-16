@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.SysUserMapper">
+    <!-- 根据用户ID查询用户 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultType="com.award.log.model.SysUser">
+        SELECT * FROM sys_user WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据用户名查询用户 -->
+    <select id="selectByUsername" parameterType="java.lang.String" resultType="com.award.log.model.SysUser">
+        SELECT * FROM sys_user WHERE username = #{username}
+    </select>
+
+    <select id="selectByEmail" parameterType="java.lang.String" resultType="com.award.log.model.SysUser">
+        SELECT * FROM sys_user WHERE email = #{email}
+    </select>
+
+    <!-- 查询所有用户 -->
+    <select id="selectAll" resultType="com.award.log.model.SysUser">
+        SELECT * FROM sys_user
+    </select>
+
+    <!-- 分页查询用户列表 -->
+    <select id="selectPage" resultType="com.award.log.model.SysUser">
+        SELECT * FROM sys_user LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询用户总数 -->
+    <select id="countAll" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM sys_user
+    </select>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.award.log.model.SysUser" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO sys_user (username, password, role, email, create_time, update_time)
+        VALUES (#{username}, #{password}, #{role}, #{email}, NOW(), NOW())
+    </insert>
+
+    <!-- 更新用户信息 -->
+    <update id="updateById" parameterType="com.award.log.model.SysUser">
+        UPDATE sys_user
+        <set>
+            username = #{username},
+            password = #{password},
+            role = #{role},
+            <if test="email != null">
+                email = #{email},
+            </if>
+            <if test="wechatUserid != null">
+                wechat_userid = #{wechatUserid},
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateProfileFields">
+        UPDATE sys_user
+        SET email = #{email},
+            wechat_userid = #{wechatUserid},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updatePasswordById">
+        UPDATE sys_user
+        SET password = #{password},
+            update_time = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 删除用户 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM sys_user WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 查询管理员用户 -->
+    <select id="selectAdminUsers" resultType="com.award.log.model.SysUser">
+        SELECT * FROM sys_user WHERE role = 1
+    </select>
+</mapper>

@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.award.log.mapper.LogAlarmMapper">
+
+    <resultMap id="LogAlarmResultMap" type="com.award.log.model.LogAlarm">
+        <id column="id" property="id" />
+        <result column="alarm_id" property="alarmId" />
+        <result column="task_id" property="taskId" />
+        <result column="level" property="level" />
+        <result column="root_cause" property="rootCause" />
+        <result column="solution" property="solution" />
+        <result column="log_content" property="logContent" />
+        <result column="push_status" property="pushStatus" />
+        <result column="lifecycle_status" property="lifecycleStatus" />
+        <result column="ack_by" property="ackBy" />
+        <result column="ack_time" property="ackTime" />
+        <result column="handled_by" property="handledBy" />
+        <result column="handled_time" property="handledTime" />
+        <result column="closed_time" property="closedTime" />
+        <result column="escalation_level" property="escalationLevel" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <insert id="insert" parameterType="com.award.log.model.LogAlarm">
+        INSERT INTO log_alarm (
+            alarm_id, task_id, level, root_cause, solution, log_content, push_status, lifecycle_status, escalation_level, create_time, update_time
+        ) VALUES (
+            #{alarmId}, #{taskId}, #{level}, #{rootCause}, #{solution}, #{logContent}, #{pushStatus}, #{lifecycleStatus}, #{escalationLevel}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="LogAlarmResultMap">
+        SELECT * FROM log_alarm WHERE id = #{id}
+    </select>
+
+    <select id="selectByAlarmId" parameterType="java.lang.String" resultMap="LogAlarmResultMap">
+        SELECT * FROM log_alarm WHERE alarm_id = #{alarmId}
+    </select>
+
+    <select id="selectLatestByFingerprint" resultMap="LogAlarmResultMap">
+        SELECT * FROM log_alarm
+        WHERE task_id = #{taskId}
+          AND level = #{level}
+          AND root_cause LIKE CONCAT(#{rootCausePrefix}, '%')
+          AND create_time >= DATE_SUB(NOW(), INTERVAL #{minutes} MINUTE)
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByTaskId" parameterType="java.lang.String" resultMap="LogAlarmResultMap">
+        SELECT * FROM log_alarm WHERE task_id = #{taskId} ORDER BY create_time DESC
+    </select>
+
+    <update id="update" parameterType="com.award.log.model.LogAlarm">
+        UPDATE log_alarm SET
+            task_id = #{taskId},
+            level = #{level},
+            root_cause = #{rootCause},
+            solution = #{solution},
+            log_content = #{logContent},
+            push_status = #{pushStatus},
+            lifecycle_status = #{lifecycleStatus},
+            ack_by = #{ackBy},
+            ack_time = #{ackTime},
+            handled_by = #{handledBy},
+            handled_time = #{handledTime},
+            closed_time = #{closedTime},
+            escalation_level = #{escalationLevel},
+            update_time = #{updateTime}
+        WHERE alarm_id = #{alarmId}
+    </update>
+
+    <update id="updatePushStatus">
+        UPDATE log_alarm SET
+            push_status = #{pushStatus},
+            update_time = CURRENT_TIMESTAMP
+        WHERE alarm_id = #{alarmId}
+    </update>
+
+    <update id="updateLifecycle">
+        UPDATE log_alarm
+        SET lifecycle_status = #{lifecycleStatus},
+            ack_by = CASE WHEN #{lifecycleStatus}='ACKNOWLEDGED' THEN #{operator} ELSE ack_by END,
+            ack_time = CASE WHEN #{lifecycleStatus}='ACKNOWLEDGED' THEN NOW() ELSE ack_time END,
+            handled_by = CASE WHEN #{lifecycleStatus}='HANDLED' THEN #{operator} ELSE handled_by END,
+            handled_time = CASE WHEN #{lifecycleStatus}='HANDLED' THEN NOW() ELSE handled_time END,
+            closed_time = CASE WHEN #{lifecycleStatus}='CLOSED' THEN NOW() ELSE closed_time END,
+            update_time = NOW()
+        WHERE alarm_id = #{alarmId}
+    </update>
+
+    <update id="increaseEscalation">
+        UPDATE log_alarm
+        SET escalation_level = escalation_level + 1,
+            update_time = NOW()
+        WHERE alarm_id = #{alarmId}
+    </update>
+
+    <select id="selectNeedEscalation" resultMap="LogAlarmResultMap">
+        SELECT * FROM log_alarm
+        WHERE lifecycle_status IN ('NEW','ACKNOWLEDGED')
+          AND TIMESTAMPDIFF(MINUTE, create_time, NOW()) >= #{minutes}
+          AND escalation_level &lt; 3
+        ORDER BY create_time ASC
+    </select>
+
+    <select id="selectPage" resultMap="LogAlarmResultMap">
+        SELECT * FROM log_alarm
+        <where>
+            <if test="level != null and level != ''">
+                AND level = #{level}
+            </if>
+            <if test="taskId != null and taskId != ''">
+                AND task_id = #{taskId}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="selectPageByUserId" resultMap="LogAlarmResultMap">
+        SELECT la.*
+        FROM log_alarm la
+        JOIN log_analysis_task lat ON lat.task_id = la.task_id
+        <where>
+            AND lat.user_id = #{userId}
+            <if test="level != null and level != ''">
+                AND la.level = #{level}
+            </if>
+            <if test="taskId != null and taskId != ''">
+                AND la.task_id = #{taskId}
+            </if>
+        </where>
+        ORDER BY la.create_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM log_alarm
+        <where>
+            <if test="level != null and level != ''">
+                AND level = #{level}
+            </if>
+            <if test="taskId != null and taskId != ''">
+                AND task_id = #{taskId}
+            </if>
+        </where>
+    </select>
+
+    <select id="countByUserId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM log_alarm la
+        JOIN log_analysis_task lat ON lat.task_id = la.task_id
+        <where>
+            AND lat.user_id = #{userId}
+            <if test="level != null and level != ''">
+                AND la.level = #{level}
+            </if>
+            <if test="taskId != null and taskId != ''">
+                AND la.task_id = #{taskId}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectAlarmTrend" resultType="java.util.Map">
+        SELECT
+            DATE(create_time) AS date,
+            COUNT(*) AS count
+        FROM log_alarm
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="level != null and level != ''">
+            AND level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND task_id = #{taskId}
+        </if>
+        GROUP BY DATE(create_time)
+        ORDER BY date
+    </select>
+
+    <select id="selectAlarmTrendByUserId" resultType="java.util.Map">
+        SELECT
+            DATE(la.create_time) AS date,
+            COUNT(*) AS count
+        FROM log_alarm la
+        JOIN log_analysis_task lat ON lat.task_id = la.task_id
+        WHERE lat.user_id = #{userId}
+          AND la.create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="level != null and level != ''">
+            AND la.level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND la.task_id = #{taskId}
+        </if>
+        GROUP BY DATE(la.create_time)
+        ORDER BY date
+    </select>
+
+    <select id="selectAlarmLevelDistribution" resultType="java.util.Map">
+        SELECT
+            level,
+            COUNT(*) AS count
+        FROM log_alarm
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="level != null and level != ''">
+            AND level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND task_id = #{taskId}
+        </if>
+        GROUP BY level
+        ORDER BY count DESC
+    </select>
+
+    <select id="selectAlarmLevelDistributionByUserId" resultType="java.util.Map">
+        SELECT
+            la.level AS level,
+            COUNT(*) AS count
+        FROM log_alarm la
+        JOIN log_analysis_task lat ON lat.task_id = la.task_id
+        WHERE lat.user_id = #{userId}
+          AND la.create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="level != null and level != ''">
+            AND la.level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND la.task_id = #{taskId}
+        </if>
+        GROUP BY la.level
+        ORDER BY count DESC
+    </select>
+
+    <select id="selectAlarmRootCauseStatistics" resultType="java.util.Map">
+        SELECT
+            LEFT(root_cause, 20) AS root_cause,
+            COUNT(*) AS count
+        FROM log_alarm
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        AND root_cause IS NOT NULL
+        <if test="level != null and level != ''">
+            AND level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND task_id = #{taskId}
+        </if>
+        GROUP BY LEFT(root_cause, 20)
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+
+    <select id="selectAlarmRootCauseStatisticsByUserId" resultType="java.util.Map">
+        SELECT
+            LEFT(la.root_cause, 20) AS root_cause,
+            COUNT(*) AS count
+        FROM log_alarm la
+        JOIN log_analysis_task lat ON lat.task_id = la.task_id
+        WHERE lat.user_id = #{userId}
+          AND la.create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+          AND la.root_cause IS NOT NULL
+        <if test="level != null and level != ''">
+            AND la.level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND la.task_id = #{taskId}
+        </if>
+        GROUP BY LEFT(la.root_cause, 20)
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+
+    <select id="selectAlarmStatistics" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS total_alarms,
+            SUM(CASE WHEN push_status IN ('SUCCESS', 'RECORDED') THEN 1 ELSE 0 END) AS success_alarms,
+            SUM(CASE WHEN push_status = 'FAILED' THEN 1 ELSE 0 END) AS failed_alarms
+        FROM log_alarm
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="level != null and level != ''">
+            AND level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND task_id = #{taskId}
+        </if>
+    </select>
+
+    <select id="selectAlarmStatisticsByUserId" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS total_alarms,
+            SUM(CASE WHEN la.push_status IN ('SUCCESS', 'RECORDED') THEN 1 ELSE 0 END) AS success_alarms,
+            SUM(CASE WHEN la.push_status = 'FAILED' THEN 1 ELSE 0 END) AS failed_alarms
+        FROM log_alarm la
+        JOIN log_analysis_task lat ON lat.task_id = la.task_id
+        WHERE lat.user_id = #{userId}
+          AND la.create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        <if test="level != null and level != ''">
+            AND la.level = #{level}
+        </if>
+        <if test="taskId != null and taskId != ''">
+            AND la.task_id = #{taskId}
+        </if>
+    </select>
+
+</mapper>

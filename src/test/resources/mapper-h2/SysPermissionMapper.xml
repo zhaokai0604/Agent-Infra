@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.SysPermissionMapper">
+    <!-- 根据权限ID查询权限 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultType="com.award.log.model.SysPermission">
+        SELECT permission_id as permissionId, permission_name as permissionName, permission_code as permissionCode, 
+               create_time as createTime 
+        FROM sys_permission 
+        WHERE permission_id = #{permissionId}
+    </select>
+
+    <!-- 根据权限代码查询权限 -->
+    <select id="selectByPermissionCode" parameterType="java.lang.String" resultType="com.award.log.model.SysPermission">
+        SELECT permission_id as permissionId, permission_name as permissionName, permission_code as permissionCode, 
+               create_time as createTime 
+        FROM sys_permission 
+        WHERE permission_code = #{permissionCode}
+    </select>
+
+    <!-- 查询所有权限 -->
+    <select id="selectAll" resultType="com.award.log.model.SysPermission">
+        SELECT permission_id as permissionId, permission_name as permissionName, permission_code as permissionCode, 
+               create_time as createTime 
+        FROM sys_permission
+    </select>
+
+    <!-- 分页查询权限列表 -->
+    <select id="selectPage" resultType="com.award.log.model.SysPermission">
+        SELECT permission_id as permissionId, permission_name as permissionName, permission_code as permissionCode, 
+               create_time as createTime 
+        FROM sys_permission 
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询权限总数 -->
+    <select id="countAll" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM sys_permission
+    </select>
+
+    <!-- 插入权限 -->
+    <insert id="insert" parameterType="com.award.log.model.SysPermission" useGeneratedKeys="true" keyProperty="permissionId">
+        INSERT INTO sys_permission (permission_code, permission_name, create_time)
+        VALUES (#{permissionCode}, #{permissionName}, NOW())
+    </insert>
+
+    <!-- 更新权限信息 -->
+    <update id="updateById" parameterType="com.award.log.model.SysPermission">
+        UPDATE sys_permission
+        SET
+            permission_code = #{permissionCode},
+            permission_name = #{permissionName}
+        WHERE permission_id = #{permissionId}
+    </update>
+
+    <!-- 删除权限 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM sys_permission WHERE permission_id = #{permissionId}
+    </delete>
+
+    <!-- 根据角色ID查询权限列表 -->
+    <select id="selectByRoleId" parameterType="java.lang.Integer" resultType="com.award.log.model.SysPermission">
+        SELECT p.permission_id as permissionId, p.permission_name as permissionName, p.permission_code as permissionCode, 
+               p.create_time as createTime 
+        FROM sys_permission p
+        JOIN sys_role_permission rp ON p.permission_id = rp.permission_id
+        WHERE rp.role_id = #{roleId}
+    </select>
+</mapper>

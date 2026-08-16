@@ -1,0 +1,23 @@
+[Unit]
+Description=ThreshCore award-log (Kylin V11 LoongArch)
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/threshcore
+EnvironmentFile=-/etc/threshcore/threshcore.env
+ExecStart=/usr/bin/java -Xms256m -Xmx1024m -XX:MaxMetaspaceSize=256m -jar /opt/threshcore/award-log.jar
+Restart=on-failure
+RestartSec=10
+SuccessExitStatus=143
+LimitNOFILE=65535
+
+# 日志由应用 log4j2 写入 WorkingDirectory/logs/
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=award-log
+
+[Install]
+WantedBy=multi-user.target

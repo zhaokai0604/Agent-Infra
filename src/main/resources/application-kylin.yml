@@ -1,0 +1,107 @@
+# 银河麒麟高级服务器版 V11 + LoongArch64 生产合并配置
+# 启动：--spring.profiles.active=prod-kylin  （见 application.yml spring.profiles.group）
+
+platform:
+  kylin:
+    expected-arch: loongarch64
+    probe-commands: true
+
+# LoongArch 上 ONNX Runtime 官方 jar 常无本地库：默认启发式评分，日志分析仍可完成
+log:
+  pipeline:
+    decision:
+      rf:
+        model-path: classpath:models/random-forest-v2.onnx
+        force-heuristic-on-loongarch: true
+
+agent:
+  run-as-user: ${AGENT_RUN_AS_USER:award-agent}
+  min-privilege:
+    # Production Kylin must use the dedicated low-privilege account. Read/write paths
+    # remain constrained by OpsPathPolicy, governance and confirmation gates.
+    enabled: ${AGENT_MIN_PRIVILEGE:true}
+  paths:
+    policy-version: path-policy-v2-kylin-loongarch
+    read-prefixes:
+      - /var/log
+      - /var/log/journal
+      - /tmp
+      - /var/tmp
+      - /var/cache
+      - /opt/threshcore
+      - /run
+      - /srv
+      - /data
+    clean-roots:
+      - /tmp
+      - /var/tmp
+      - /var/cache
+      - /opt/threshcore/tmp
+    log-cleanup-roots:
+      - /var/log
+      - /var/log/journal
+      - /opt/threshcore/logs
+    denied-substrings:
+      - /etc/shadow
+      - /etc/gshadow
+      - /.ssh/
+      - /root/
+      - /boot/
+      - /etc/sudoers
+      - /etc/passwd
+    log-protected-substrings:
+      - /var/lib/mysql
+      - /var/lib/mariadb
+      - /var/lib/pgsql
+      - /var/lib/postgresql
+      - ib_logfile
+      - ibdata
+      - binlog
+      - slow.log
+      - relay-log
+      - /var/lib/redis
+      - /var/lib/mongodb
+  autonomous:
+    enabled: true
+    disk-pressure-percent: 80
+    cpu-warn-percent: 85
+    health-check-host: 127.0.0.1
+    health-check-ports: 8088,80,443
+  service-restart:
+    allowlist:
+      - nginx
+      - httpd
+      - rsyslog
+      - syslog-ng
+      - award-log
+
+ops:
+  dry-run:
+    # false means confirmed write tools can really mutate/delete; set true for rehearsal-only runs.
+    global: ${OPS_DRY_RUN_GLOBAL:false}
+  auto-remediation:
+    enabled: true
+    run-mode: HYBRID
+    risk-patrol-auto-max: 6.0
+  patrol:
+    enabled: true
+    inspect-roots: ${OPS_PATROL_INSPECT_ROOTS:/var/log,/tmp,/var/tmp,/var/cache,/opt/threshcore/logs}
+  # 巡检单轨仅保留 afterPatrol 自动修复，不再启用全栈自主运维双轨
+
+server:
+  tomcat:
+    connection-timeout: 300000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,engine-health
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.award.log: info
+    com.award.log.mapper: warn

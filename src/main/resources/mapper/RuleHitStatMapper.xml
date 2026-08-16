@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.RuleHitStatMapper">
+    <resultMap id="RuleHitStatMap" type="com.award.log.model.RuleHitStat">
+        <id column="id" property="id"/>
+        <result column="rule_id" property="ruleId"/>
+        <result column="rule_name" property="ruleName"/>
+        <result column="hit_count" property="hitCount"/>
+        <result column="miss_count" property="missCount"/>
+        <result column="window_start" property="windowStart"/>
+        <result column="window_end" property="windowEnd"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.award.log.model.RuleHitStat">
+        INSERT INTO rule_hit_stat(rule_id, rule_name, hit_count, miss_count, window_start, window_end, create_time)
+        VALUES(#{ruleId}, #{ruleName}, #{hitCount}, #{missCount}, #{windowStart}, #{windowEnd}, NOW())
+    </insert>
+
+    <select id="selectLatest" resultMap="RuleHitStatMap">
+        SELECT * FROM rule_hit_stat ORDER BY id DESC LIMIT #{limit}
+    </select>
+</mapper>

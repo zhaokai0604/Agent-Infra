@@ -1,0 +1,11 @@
+rules:
+  - id: high_error_rate
+    name: 高错误率复合规则
+    expression: "LEVEL IN (ERROR, FATAL) AND (RATE > 0.3 OR COUNT > 10) AND NOT SUPPRESSED"
+    severity: ERROR
+    enabled: true
+  - id: cpu_usage_threshold
+    name: CPU阈值规则
+    expression: "CPU_USAGE > 80 AND NOT SUPPRESSED"
+    severity: WARNING
+    enabled: true

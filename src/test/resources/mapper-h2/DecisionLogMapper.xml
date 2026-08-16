@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.DecisionLogMapper">
+
+    <resultMap id="DecisionLogMap" type="com.award.log.model.DecisionLog">
+        <id column="id" property="id"/>
+        <result column="decision_id" property="decisionId"/>
+        <result column="engine_type" property="engineType"/>
+        <result column="should_alert" property="shouldAlert"/>
+        <result column="confidence" property="confidence"/>
+        <result column="latency_ms" property="latencyMs"/>
+        <result column="input_json" property="inputJson"/>
+        <result column="output_json" property="outputJson"/>
+        <result column="trace_json" property="traceJson"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.award.log.model.DecisionLog">
+        INSERT INTO decision_log(
+          decision_id, engine_type, should_alert, confidence, latency_ms,
+          input_json, output_json, trace_json, create_time
+        ) VALUES (
+          #{decisionId}, #{engineType}, #{shouldAlert}, #{confidence}, #{latencyMs},
+          #{inputJson}, #{outputJson}, #{traceJson}, NOW()
+        )
+    </insert>
+
+    <select id="selectByDecisionId" resultMap="DecisionLogMap">
+        SELECT * FROM decision_log WHERE decision_id = #{decisionId}
+    </select>
+
+    <select id="selectByFilter" resultMap="DecisionLogMap">
+        SELECT * FROM decision_log
+        <where>
+            <if test="engineType != null and engineType != ''">
+                AND engine_type = #{engineType}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND create_time <![CDATA[ >= ]]> #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND create_time <![CDATA[ <= ]]> #{endTime}
+            </if>
+            <if test="result != null">
+                AND should_alert = #{result}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="selectOfflinePairs" resultType="java.util.Map">
+        SELECT d.engine_type AS engineType,
+               d.should_alert AS predicted,
+               f.actual_alert AS actual
+        FROM decision_log d
+        INNER JOIN decision_feedback f ON d.decision_id = f.decision_id
+        <where>
+            <if test="startTime != null and startTime != ''">
+                AND d.create_time <![CDATA[ >= ]]> #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND d.create_time <![CDATA[ <= ]]> #{endTime}
+            </if>
+        </where>
+    </select>
+</mapper>

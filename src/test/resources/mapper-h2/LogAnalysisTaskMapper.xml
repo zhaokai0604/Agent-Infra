@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.award.log.mapper.LogAnalysisTaskMapper">
+
+    <resultMap id="BaseResultMap" type="com.award.log.model.LogAnalysisTask">
+        <id column="task_id" jdbcType="VARCHAR" property="taskId" />
+        <result column="user_id" jdbcType="INTEGER" property="userId" />
+        <result column="file_name" jdbcType="VARCHAR" property="fileName" />
+        <result column="status" jdbcType="VARCHAR" property="status" />
+        <result column="progress" jdbcType="INTEGER" property="progress" />
+        <result column="current_step" jdbcType="VARCHAR" property="currentStep" />
+        <result column="error_msg" jdbcType="VARCHAR" property="errorMsg" />
+        <result column="ai_diagnosis" jdbcType="VARCHAR" property="aiDiagnosis" />
+        <result column="total_logs" jdbcType="INTEGER" property="totalLogs" />
+        <result column="anomaly_count" jdbcType="INTEGER" property="anomalyCount" />
+        <result column="anomaly_rate" jdbcType="DOUBLE" property="anomalyRate" />
+        <result column="cost_time" jdbcType="BIGINT" property="costTime" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        task_id, user_id, file_name, status, progress, current_step, error_msg, ai_diagnosis,
+        total_logs, anomaly_count, anomaly_rate, cost_time, create_time, update_time
+    </sql>
+
+    <sql id="Filter_Conditions">
+        <if test="fileName != null and fileName != ''">
+            and file_name like concat('%', #{fileName}, '%')
+        </if>
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        <if test="createTimeStart != null">
+            and create_time &gt;= #{createTimeStart}
+        </if>
+        <if test="createTimeEnd != null">
+            and create_time &lt;= #{createTimeEnd}
+        </if>
+    </sql>
+
+    <select id="selectById" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        where task_id = #{taskId,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByIdAndUserId" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        where task_id = #{taskId,jdbcType=VARCHAR}
+          and user_id = #{userId,jdbcType=INTEGER}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        order by create_time desc
+    </select>
+
+    <select id="selectAllByUserId" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        where user_id = #{userId,jdbcType=INTEGER}
+        order by create_time desc
+    </select>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithFilter" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        <where>
+            <include refid="Filter_Conditions" />
+        </where>
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithFilterByUserId" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from log_analysis_task
+        <where>
+            and user_id = #{userId,jdbcType=INTEGER}
+            <include refid="Filter_Conditions" />
+        </where>
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="java.lang.Long">
+        select count(*) from log_analysis_task
+    </select>
+
+    <select id="countAllByUserId" resultType="java.lang.Long">
+        select count(*)
+        from log_analysis_task
+        where user_id = #{userId,jdbcType=INTEGER}
+    </select>
+
+    <select id="countSinceDays" resultType="java.lang.Long">
+        select count(*)
+        from log_analysis_task
+        where create_time &gt;= DATEADD('DAY', -#{days}, CURRENT_TIMESTAMP)
+    </select>
+
+    <select id="countWithFilter" resultType="java.lang.Long">
+        select count(*)
+        from log_analysis_task
+        <where>
+            <include refid="Filter_Conditions" />
+        </where>
+    </select>
+
+    <select id="countWithFilterByUserId" resultType="java.lang.Long">
+        select count(*)
+        from log_analysis_task
+        <where>
+            and user_id = #{userId,jdbcType=INTEGER}
+            <include refid="Filter_Conditions" />
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.award.log.model.LogAnalysisTask">
+        insert into log_analysis_task
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">task_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="fileName != null">file_name,</if>
+            <if test="status != null">status,</if>
+            <if test="progress != null">progress,</if>
+            <if test="currentStep != null">current_step,</if>
+            <if test="errorMsg != null">error_msg,</if>
+            <if test="aiDiagnosis != null">ai_diagnosis,</if>
+            <if test="totalLogs != null">total_logs,</if>
+            <if test="anomalyCount != null">anomaly_count,</if>
+            <if test="anomalyRate != null">anomaly_rate,</if>
+            <if test="costTime != null">cost_time,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">#{taskId,jdbcType=VARCHAR},</if>
+            <if test="userId != null">#{userId,jdbcType=INTEGER},</if>
+            <if test="fileName != null">#{fileName,jdbcType=VARCHAR},</if>
+            <if test="status != null">#{status,jdbcType=VARCHAR},</if>
+            <if test="progress != null">#{progress,jdbcType=INTEGER},</if>
+            <if test="currentStep != null">#{currentStep,jdbcType=VARCHAR},</if>
+            <if test="errorMsg != null">#{errorMsg,jdbcType=VARCHAR},</if>
+            <if test="aiDiagnosis != null">#{aiDiagnosis,jdbcType=VARCHAR},</if>
+            <if test="totalLogs != null">#{totalLogs,jdbcType=INTEGER},</if>
+            <if test="anomalyCount != null">#{anomalyCount,jdbcType=INTEGER},</if>
+            <if test="anomalyRate != null">#{anomalyRate,jdbcType=DOUBLE},</if>
+            <if test="costTime != null">#{costTime,jdbcType=BIGINT},</if>
+            <if test="createTime != null">#{createTime,jdbcType=TIMESTAMP},</if>
+            <if test="updateTime != null">#{updateTime,jdbcType=TIMESTAMP},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.award.log.model.LogAnalysisTask">
+        update log_analysis_task
+        <set>
+            <if test="userId != null">user_id = #{userId,jdbcType=INTEGER},</if>
+            <if test="fileName != null">file_name = #{fileName,jdbcType=VARCHAR},</if>
+            <if test="status != null">status = #{status,jdbcType=VARCHAR},</if>
+            <if test="progress != null">progress = #{progress,jdbcType=INTEGER},</if>
+            <if test="currentStep != null">current_step = #{currentStep,jdbcType=VARCHAR},</if>
+            <if test="errorMsg != null">error_msg = #{errorMsg,jdbcType=VARCHAR},</if>
+            <if test="aiDiagnosis != null">ai_diagnosis = #{aiDiagnosis,jdbcType=VARCHAR},</if>
+            <if test="totalLogs != null">total_logs = #{totalLogs,jdbcType=INTEGER},</if>
+            <if test="anomalyCount != null">anomaly_count = #{anomalyCount,jdbcType=INTEGER},</if>
+            <if test="anomalyRate != null">anomaly_rate = #{anomalyRate,jdbcType=DOUBLE},</if>
+            <if test="costTime != null">cost_time = #{costTime,jdbcType=BIGINT},</if>
+            <if test="createTime != null">create_time = #{createTime,jdbcType=TIMESTAMP},</if>
+            <if test="updateTime != null">update_time = #{updateTime,jdbcType=TIMESTAMP},</if>
+        </set>
+        where task_id = #{taskId,jdbcType=VARCHAR}
+    </update>
+
+    <select id="getTaskStatusCount" resultType="java.util.Map">
+        select status, count(*) as count
+        from log_analysis_task
+        group by status
+    </select>
+
+    <select id="getTaskTrend" parameterType="java.lang.Integer" resultType="java.util.Map">
+        select CAST(create_time AS DATE) as date, count(*) as count
+        from log_analysis_task
+        where create_time >= DATEADD('DAY', -#{days}, CURRENT_TIMESTAMP)
+        group by CAST(create_time AS DATE)
+        order by date
+    </select>
+
+    <select id="getTaskCompletionStatistics" resultType="java.util.Map">
+        select status, count(*) as count
+        from log_analysis_task
+        group by status
+    </select>
+
+    <select id="getAverageProcessingTime" resultType="java.lang.Double">
+        select avg(cost_time) as avgTime
+        from log_analysis_task
+        where cost_time > 0
+    </select>
+
+    <delete id="deleteById" parameterType="java.lang.String">
+        delete from log_analysis_task
+        where task_id = #{taskId,jdbcType=VARCHAR}
+    </delete>
+</mapper>

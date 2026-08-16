@@ -1,0 +1,18 @@
+# ThreshCore 最小权限运维账户 sudoers 片段（按需裁剪后安装）
+#
+# 安装（在目标机执行，安装前务必 visudo 校验语法）：
+#   sudo cp scripts/deploy/sudoers.award-agent.example /etc/sudoers.d/award-agent
+#   sudo chmod 440 /etc/sudoers.d/award-agent
+#   sudo visudo -cf /etc/sudoers.d/award-agent
+#
+# 说明：systemd 以 root 运行 JVM 时，sudo -u award-agent 通常已可用；
+#       若将来改为非 root 运行后端，需按现场命令白名单放开下列 NOPASSWD。
+
+Defaults:award-agent !requiretty
+
+award-agent ALL=(root) NOPASSWD: /usr/bin/systemctl status *, /usr/bin/systemctl is-active *
+award-agent ALL=(root) NOPASSWD: /usr/bin/journalctl *
+award-agent ALL=(root) NOPASSWD: /usr/sbin/ss *, /usr/bin/ss *
+award-agent ALL=(root) NOPASSWD: /usr/bin/df *, /usr/bin/du *, /usr/bin/ps *
+award-agent ALL=(root) NOPASSWD: /usr/bin/ping *, /usr/bin/find *
+award-agent ALL=(root) NOPASSWD: /usr/bin/crontab -l
