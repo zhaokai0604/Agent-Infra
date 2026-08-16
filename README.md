@@ -128,9 +128,21 @@ npm run build
 
 可提交的样例输入/输出见 [examples/](examples/)，本仓库实际构建与测试结果见 [运行验证记录](docs/competition/运行验证记录.md)。
 
+## 参赛代码包完整性
+
+| 交付项 | 仓库位置 | 说明 |
+|---|---|---|
+| 运行入口 | [本 README 的启动步骤](#启动) | 后端 `mvn spring-boot:run`；前端 `cd frontend && npm run dev`。 |
+| 依赖说明 | [pom.xml](pom.xml)、[frontend/package.json](frontend/package.json) | Java/Maven 与 Node/npm 依赖均可由清单恢复。 |
+| 配置文件 | [.env.example](.env.example)、[application-local.example.yml](src/main/resources/application-local.example.yml)、[docker-compose.yml](docker-compose.yml) | 仅提交示例配置；真实密钥和本地覆盖文件不入库。 |
+| 样例输入/输出 | [examples/](examples/) | 包含 Dry Run 请求、脱敏预期回执和执行说明；不触发真实删除。 |
+| 运行证据 | [运行验证记录](docs/competition/运行验证记录.md) | 记录实际环境、后端测试、JAR/JaCoCo 产物与前端生产构建结果。 |
+
+> 说明：该项目需要按示例配置数据库与模型服务后启动；测试可使用 H2，不依赖完整中间件。样例与验证记录不包含生产资产、真实密钥或用户数据。
+
 ## 交付与开放计划
 
-本仓库采用 [Apache-2.0](LICENSE) 许可证。初赛以方案设计和可复用能力边界为主；复赛将补充 AgentTeams 适配层、可执行多 Agent 编排示例、标准 MCP Server 适配、样例输入输出与完整运行证据，保证工程能力、文档和演示材料能够逐步验证。
+本仓库采用 [Apache-2.0](LICENSE) 许可证。初赛以方案设计和可复用能力边界为主；复赛将补充 AgentTeams 适配层、完整多 Agent 编排示例、标准 MCP Server 适配与现场 Demo 视频，保证工程能力、文档和演示材料能够逐步验证。
 
 ## 文档索引
 
