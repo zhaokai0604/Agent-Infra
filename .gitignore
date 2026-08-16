@@ -100,7 +100,6 @@ perf/data/results/
 
 # 已从交付仓库移除的研究/比赛资料，避免再次误加入
 docs/patent/
-docs/competition/
 docs/archive/
 docs/_doc_extract/
 

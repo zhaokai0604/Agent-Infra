@@ -1,215 +1,137 @@
-# ThreshCore / award-log
+# ThreshCore Agent Infra：面向零人工运维的多 Agent 协同底座
 
-ThreshCore 是一个面向企业运维的日志分析与可控 Agent 平台，整合日志诊断、主机巡检、MCP 工具调用、风险门控、自动处置、审计追踪和知识记忆。
+> GOAI 2026 · Agent Infra（新智基座）赛道参赛项目
 
-项目重点不是让模型获得一个无限制终端，而是让 Agent 在明确的工具白名单、参数校验、风险分级、人工确认和结果验证边界内完成运维任务。
+## 项目简介
 
-## 当前状态
+传统运维依赖脚本、监控面板和人工经验：告警分散、根因定位慢、执行风险高，且处置过程很难复盘。ThreshCore Agent Infra 面向这一真实企业场景，提供以自然语言任务为入口的可控运维协同底座：系统将日志、巡检和告警线索组织为任务上下文，按“观察—诊断—计划—执行—验证—复盘”闭环调用受控工具，并沉淀 Trace、审计记录和可复用工作流。
 
-| 项目 | 说明 |
-|---|---|
-| 后端 | Java 17、Spring Boot、MyBatis、Spring AI |
-| 前端 | Vue 3、Vite、Element Plus、ECharts |
-| 数据库 | MySQL 8 默认；MariaDB 可通过配置切换 |
-| 默认后端端口 | `8088` |
-| 前端开发端口 | `3000`，由 Vite 代理到后端 `8088` |
-| 上下文路径 | `/award-log` |
-| 可选依赖 | Qdrant、Elasticsearch、Kafka、Redis |
-| 主要入口 | `http://localhost:3000` 或 `http://localhost:8088/award-log/` |
+项目的核心不是赋予模型无限制的 Shell 权限，而是把工具白名单、参数校验、风险分级、人工确认、效果校验和审计证据置于 Agent 执行链路中。当前工程已具备日志诊断、主机巡检、知识库/RAG、工具目录、风险门控、确认执行、工作流记忆和可观测接口等能力；本参赛方案以 **AgentTeams（原 Hiclaw）** 为多 Agent 协同设计基点，将这些已验证能力包装为可复用 Skill 与工具契约，面向企业级零人工运维闭环演进。
 
-## 功能说明
+## 赛道对齐与当前状态
 
-| 功能 | 使用入口 | 核心实现 | 备注 |
+| 赛道关注点 | 本项目方案 | 当前状态 |
+|---|---|---|
+| 企业级复杂任务闭环 | 告警/日志输入 → 诊断 → 处置计划 → 受控执行 → 恢复验证 → 复盘沉淀 | 已有执行底座 |
+| 不少于 3 个职能 Agent | 编排、诊断、处置、验证审计 4 个角色协作 | 已完成角色与接口设计；待接入 AgentTeams 运行时 |
+| Skill（必选） | 巡检感知、证据诊断、受控处置、验证审计四类可复用 Skill | 已定义契约；底层服务/工具已实现 |
+| MCP / 工具集成 | 工具目录、参数 Schema、HTTP 调用、风险等级与统一回执 | 已有内部 MCP 风格工具层；标准 MCP Server 适配待补齐 |
+| 上下文增强 | 工作流记忆、知识库/RAG、共享 Trace 与执行状态 | 已实现 |
+| 可观测与安全审计 | Trace、审计记录、Prometheus/OpenTelemetry 依赖、审批与效果指纹 | 已实现核心链路 |
+
+**诚实边界：** 当前仓库不是 AgentTeams SDK 的既有实现；AgentTeams 是本方案的协同设计基点与下一阶段集成目标。仓库中的 Java/Spring 工程已经提供可验证的工具执行与治理能力，后续只需增加 AgentTeams 角色编排适配层，而非重写工具、安全和证据链路。详细设计见 [参赛方案](docs/competition/agent-infra-参赛方案.md)。
+
+## 方案架构
+
+```mermaid
+flowchart LR
+  I["告警 / 日志 / 自然语言任务"] --> O["编排 Agent\n任务拆解与状态追踪"]
+  O --> D["诊断 Agent\n巡检、日志分析、RAG"]
+  D --> P["处置 Agent\nSkill 计划与工具调用"]
+  P --> G["安全与治理层\n白名单、风险、审批、预算"]
+  G --> T["工具层\nMCP 风格目录与执行器"]
+  T --> V["验证审计 Agent\n效果校验、Trace、复盘"]
+  V --> M["工作流记忆 / 知识库"]
+  M -. "历史证据与成功套路" .-> O
+```
+
+### Agent Identity 清单
+
+| Agent | 职责与输出 | 已有工程映射 | 协同边界 |
 |---|---|---|---|
-| 日志分析 | 前端“日志分析” | `LogAnalysisController`、`LogAnalysisService` | 支持上传、解析、异常识别、报告和导出 |
-| Agent 对话 | 前端“Agent 对话” | `AssistantOrchestrator`、`OpsRuntimeService` | 先识别意图，再选择 Playbook、Skill 和工具 |
-| 主机巡检 | 前端“巡检” | `OpsPatrolController`、`OpsPatrolService` | 汇总磁盘、CPU、内存、进程、服务和网络状态 |
-| 自动处置 | 巡检结果或 Agent 对话 | `OpsAutoRemediationService` | 生成方案后按风险决定自动执行、确认或阻断 |
-| MCP 工具 | 前端“MCP 工具控制台” | `McpToolCatalog`、`McpToolDispatcher` | 工具注册、参数解析、统一调用和结果标准化 |
-| 安全门控 | 所有写操作 | `McpInvocationSecurityGate`、`OpsGovernanceService` | 默认只读；高风险操作需要确认或直接阻断 |
-| 审计追踪 | “审计”“运维链路” | `AuditController`、`OpsTraceController` | 保存用户、Agent、工具、参数摘要、风险和执行结果 |
-| AWM 记忆 | “工作流记忆” | `WorkflowMemoryService`、`WorkflowInductionService` | 只沉淀验证成功的处置流程，供后续任务复用 |
-| Reflexion | “安全教训” | `FailureInsightService` | 保存拦截、失败、证据不足和后续改进建议 |
-| 知识库 RAG | “知识库” | `KnowledgeController`、`KnowledgeBaseService` | 文档切分、向量检索和历史案例辅助诊断 |
-| 安全信号 | 安全态势相关页面 | `SecuritySignalService` | 接收、归一化和汇总网络、主机及进程类信号 |
-| 系统配置 | “系统配置” | `SystemConfigController`、配置类 | 集中管理路径、风险、巡检和自动处置策略 |
-| 效果评估 | “运维效果” | `OpsEffectDashboardService` | 对处置前后指标、执行质量和恢复结果进行对比 |
+| 编排 Agent | 识别意图、拆解任务、选择 Skill、维护任务状态 | `AssistantOrchestrator`、`OpsIntentRouter`、`AgentExecutionState` | 不直接执行写操作 |
+| 诊断 Agent | 聚合日志、巡检和知识库证据，输出根因假设与置信依据 | `LogAnalysisService`、`OpsPatrolService`、`KnowledgeBaseService` | 只读优先；证据不足时回退补采集 |
+| 处置 Agent | 生成最小化处置计划，调用可复用 Skill / 工具 | `AgentSkillPlan`、`McpToolCatalog`、`McpToolDispatcher` | 写操作先预览；必须通过治理层 |
+| 验证审计 Agent | 校验效果、保留 Trace 与审计、沉淀成功/失败经验 | `McpAuditService`、`WorkflowMemoryService`、`FailureInsightService` | 只有验证成功的流程才进入记忆 |
 
-更完整的功能备注见 [`docs/功能说明.md`](docs/功能说明.md)。
+这些角色将映射到 AgentTeams 的角色编排、任务分发、共享上下文和状态追踪能力；共享载荷以 `traceId`、任务状态、工具回执、风险结论、效果指纹和证据摘要为核心。
 
-## 系统架构
+## 核心 Skill 与工具契约
 
-```text
-用户 / 告警 / 日志
-        ↓
-前端控制台与 API
-        ↓
-意图识别 → Agent 编排 → Skill / Playbook
-        ↓
-MCP 工具目录 → 参数校验 → 风险门控 → 执行
-        ↓
-结果验证 → 审计追踪 → AWM / Reflexion / RAG
-```
+| Skill | 触发条件 | 输入 → 输出 | 依赖工具/服务 | 失败与安全边界 |
+|---|---|---|---|---|
+| `ops-observe` | 告警、巡检或健康查询 | 资产范围、指标 → 健康快照/异常线索 | `SystemLoadTool`、`DiskTool`、`PortHealthTool` | 仅观察；路径和目标受白名单限制 |
+| `ops-diagnose` | 需要根因定位 | 日志、快照、知识 → 证据化诊断与建议 | 日志分析、RAG、`DiskAnalyzeTool`、`ProcessTool` | 证据不足不进入处置，返回补采集任务 |
+| `ops-remediate` | 诊断形成可执行建议 | 处置计划 → 预览/确认后的执行回执 | `CleanTempTool`、服务/容器/日志工具 | 默认 Dry Run；中风险确认，高风险或不可回滚动作阻断 |
+| `ops-verify-audit` | 执行后或拒绝后 | 前后状态、回执 → 验证结论、Trace、复盘记录 | 效果校验、审计、工作流记忆 | 回执与效果指纹不一致则阻断；失败不会沉淀为成功模板 |
 
-后端主要目录：
+完整的输入输出、失败处理、复用价值、AgentTeams 映射及 MCP 迁移方案见 [参赛方案](docs/competition/agent-infra-参赛方案.md)。
 
-```text
-src/main/java/com/award/log/
-├─ agent/          Agent 编排、运行时、记忆和巡检
-├─ controller/     HTTP API
-├─ mcp/            工具目录、分发器和工具实现
-├─ security/       风险识别、权限和安全门
-├─ governance/     运维治理和处置策略
-├─ service/        业务服务
-└─ config/         Spring 与运行配置
-```
+## 一个端到端场景：磁盘压力告警
 
-前端主要目录：
+1. 编排 Agent 接收“某主机磁盘告警且服务响应变慢”，创建带 `traceId` 的任务。
+2. 诊断 Agent 运行磁盘、热点目录、负载和进程观察工具，并检索历史成功工作流。
+3. 处置 Agent 形成“先清理候选临时文件、再验证空间和服务健康”的计划；写步骤仅生成预览。
+4. 用户审批后，安全门再次校验工具、参数、路径策略、风险预算和效果指纹，再执行受限动作。
+5. 验证审计 Agent 对比执行前后指标，记录工具回执、风险结论、操作者和 Trace；成功流程才可进入 AWM 工作流记忆，失败则进入反思记录。
 
-```text
-frontend/src/
-├─ components/     页面组件
-├─ components/agent/ Agent 工作台组件
-├─ api/             API 封装
-├─ composables/     组合式逻辑
-└─ utils/           审计、MCP、导出和展示工具
-```
+## 已实现的工程能力
 
-## 快速开始
+- 25 个已登记的运维工具，覆盖主机、磁盘、进程、服务、容器、网络、配置和日志。
+- HTTP 工具目录与统一执行入口：`GET /award-log/api/mcp/tools`、`POST /award-log/api/mcp/execute`。
+- 写操作双阶段协议：`POST /award-log/api/mcp/confirmExecute`；预览、确认和实际执行相互隔离。
+- 风险门控：工具白名单、参数/路径校验、提示注入与危险命令检测、资产治理、会话风险预算。
+- 证据与记忆：`traceId` 审计、效果指纹、验证回执、工作流记忆（AWM）、失败反思（Reflexion）与知识库/RAG。
+- 可观测基础：Spring Boot Actuator、Prometheus 指标以及 OpenTelemetry API/OTLP 依赖。
 
-### 环境要求
+## 运行与验证
 
-- JDK 17
-- Maven 3.8+
+### 环境
+
+- JDK 17、Maven 3.8+
 - Node.js 18+
-- MySQL 8 或 MariaDB 10.11+
-- 可选：Docker Desktop、Qdrant、Elasticsearch、Kafka、Redis
+- MySQL 8 或 MariaDB 10.11+（测试使用 H2）
+- 可选：Qdrant、Elasticsearch、Kafka、Redis
 
-### 1. 准备数据库
-
-```sql
-CREATE DATABASE IF NOT EXISTS log_analysis
-  DEFAULT CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-```
-
-执行初始化脚本：
-
-```powershell
-mariadb -u root -p log_analysis < src/main/resources/schema.sql
-```
-
-也可以启动本地依赖：
-
-```powershell
-Copy-Item .env.example .env
-# 编辑 .env，至少设置 MYSQL_ROOT_PASSWORD
-docker compose up -d mysql qdrant
-```
-
-### 2. 配置本地参数
+### 启动
 
 ```powershell
 Copy-Item src/main/resources/application-local.example.yml src/main/resources/application-local.yml
-```
-
-在本地配置文件或环境变量中填写数据库密码和模型密钥。以下文件不得提交：
-
-- `.env`
-- `application-local.yml`
-- 真实数据库密码、API Key、Token 和生产地址
-
-### 3. 启动后端
-
-```powershell
+# 在 application-local.yml 或环境变量中填写数据库与模型配置；不要提交真实密钥
 mvn spring-boot:run
-```
 
-后端默认地址：
-
-- 业务入口：`http://localhost:8088/award-log/`
-- API 文档：`http://localhost:8088/award-log/doc.html`
-- 健康检查：`http://localhost:8088/award-log/actuator/health`
-
-### 4. 启动前端
-
-```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-浏览器访问：`http://localhost:3000`。
+- 前端：`http://localhost:3000`
+- 后端：`http://localhost:8088/award-log/`
+- 健康检查：`http://localhost:8088/award-log/actuator/health`
 
-## 常用 API
+### 安全样例
 
-| 目的 | 方法 | 路径 |
-|---|---|---|
-| 查看平台状态 | `GET` | `/award-log/api/platform/info` |
-| 查看工具目录 | `GET` | `/award-log/api/mcp/tools` |
-| 执行工具 | `POST` | `/award-log/api/mcp/execute` |
-| 确认写操作 | `POST` | `/award-log/api/mcp/confirmExecute` |
-| Agent 流式对话 | `POST` | `/award-log/api/assistant/chat/stream` |
-| 启动巡检 | `POST` | `/award-log/api/ops/patrol/run` |
-| 查看运维链路 | `GET` | `/award-log/api/ops-trace/recent` |
-| 查看工作流记忆 | `GET` | `/award-log/api/ops/workflow/memory` |
-| 查看安全自检 | `GET` | `/award-log/api/security/self-check` |
-
-## 安全边界
-
-- 工具必须注册后才能被调用。
-- 参数、路径、权限和风险等级会在执行前检查。
-- 只读查询优先自动执行，写操作默认先预览。
-- 中风险操作需要用户确认，高风险或不可回滚操作直接阻断。
-- 执行结果必须进入审计链路，并尽可能进行前后状态验证。
-- 不要把真实密钥、生产配置、用户数据或运行时目录提交到 Git。
-
-## 构建与测试
-
-后端：
+先查看工具目录：
 
 ```powershell
-mvn test
-mvn verify
+Invoke-RestMethod http://localhost:8088/award-log/api/mcp/tools
 ```
 
-前端：
+对清理类任务使用预览而非真实写入：
 
 ```powershell
-cd frontend
-npm run build
+$body = @{ toolName = 'CleanTempTool'; parameters = @{ path = 'C:/temp'; dryRun = $true } } | ConvertTo-Json -Depth 5
+Invoke-RestMethod http://localhost:8088/award-log/api/mcp/execute -Method Post -ContentType 'application/json' -Body $body
 ```
 
-推荐提交前执行：
+### 验证命令
 
 ```powershell
 mvn verify
 cd frontend
+npm ci
 npm run build
 ```
 
-测试使用 H2 和测试配置，不要求本地启动完整中间件。生产环境仍需按实际部署方式配置数据库、模型和可选组件。
+测试使用 H2 与测试配置，不要求本机启动完整中间件。构建产物、日志、本地数据和真实配置均由 `.gitignore` 排除。
 
-## 运行排障
+## 交付与开放计划
 
-1. 后端是否监听 `8088`。
-2. 数据库是否已创建并导入 `schema.sql`。
-3. 是否误提交或误加载了 `application-local.yml`。
-4. 前端代理是否仍指向 `8088`。
-5. 工具调用是否被权限、路径策略、风险门或确认流程拦截。
-6. 修改数据库结构后是否同步测试 Schema 和 Mapper。
+本仓库采用 [Apache-2.0](LICENSE) 许可证。初赛以方案设计和可复用能力边界为主；复赛将补充 AgentTeams 适配层、可执行多 Agent 编排示例、标准 MCP Server 适配、样例输入输出与完整运行证据，保证工程能力、文档和演示材料能够逐步验证。
 
-## 项目文档
+## 文档索引
 
-- [功能说明](docs/功能说明.md)
+- [Agent Infra 参赛方案](docs/competition/agent-infra-参赛方案.md)
+- [功能说明与代码入口](docs/功能说明.md)
 - [部署文档](docs/deployment/部署文档.md)
-- [部署指南](部署指南.md)
 - [架构图](docs/architecture/)
-- [版权与使用限制](版权声明与使用限制声明.md)
-
-## 维护规则
-
-- 源码变更同步更新对应功能备注。
-- 新增 API、工具或前端页面时，补充 `docs/功能说明.md`。
-- 修改端口、环境变量、启动步骤时，同步更新 README。
-- 生成物、缓存、日志、测试结果和本地运行目录不进入仓库。
